@@ -59,3 +59,4 @@ An application to find movies similar to given movies
 
 --------
 
+# MovieScout
