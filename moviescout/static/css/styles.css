@@ -1,0 +1,122 @@
+.background-image {
+    background: url(../img/desktop-wallpaper-film-posters-collage-movies-resolution.jpg) no-repeat center center fixed; 
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    background-size: cover;
+    filter: blur(5px);
+    -webkit-filter: blur(5px);
+    z-index: -1;
+    opacity: 0.5;
+    width: 100vw;
+    height: 100vh;
+    position: fixed;
+}
+.bg-black{
+    background-color: #0f0f0f;
+}
+
+/* Navbar'daki linkler için stil */
+.navbar-nav .nav-link {
+    color: #ddd !important; /* Navbar linklerinin beyaz olması */
+}
+
+/* Navbar linklerine hover efekti */
+.navbar-nav .nav-link:hover {
+    color: #b3acac !important;
+}
+
+/* Brand için stil: Kalın yazı */
+.navbar-brand {
+    font-weight: bold; /* Brand metnini kalın yapar */
+    color: #ff4d4d !important; /* Brand rengini kırmızı yapar */
+    font-size: 25px;
+}
+.height{
+
+height: 20vh;
+}
+
+.form{
+
+position: relative;
+}
+
+.form .fa-search{
+
+position: absolute;
+top:20px;
+left: 20px;
+color: #9ca3af;
+
+}
+
+.form span{
+
+position: absolute;
+right: 17px;
+top: 13px;
+padding: 2px;
+border-left: 1px solid #d1d5db;
+
+}
+
+.left-pan{
+padding-left: 7px;
+}
+
+.left-pan i{
+
+padding-left: 10px;
+}
+
+.form-input{
+
+height: 55px;
+text-indent: 33px;
+border-radius: 10px;
+}
+
+.form-input:focus{
+
+box-shadow: none;
+border:none;
+}
+.search-results {
+    margin-top: 30px;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.search-results .poster {
+    margin: 10px;
+    width: 200px;
+    height: 300px;
+    object-fit: cover;  /* Ensures the image covers the space properly */
+    border-radius: 8px;
+}
+.plus-icon {
+    position: absolute;
+    font-size: 3rem; /* Size of the plus icon */
+    color: #333; /* Icon color */
+    opacity: 0.5; /* Transparent background */
+    pointer-events: none; /* Disable clicks on the icon */
+}
+
+.image-container img {
+    visibility: hidden; /* Initially hide the image */
+}
+
+/* When image is loaded, show the image and hide the icon */
+.image-container img.loaded {
+    visibility: visible;
+}
+
+.image-container .plus-icon {
+    display: block;
+}
+
+.image-container img.loaded + .plus-icon {
+    display: none; /* Hide the plus icon when the image is loaded */
+}
