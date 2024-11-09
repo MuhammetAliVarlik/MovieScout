@@ -120,3 +120,19 @@ border:none;
 .image-container img.loaded + .plus-icon {
     display: none; /* Hide the plus icon when the image is loaded */
 }
+
+/* Optional: Ensure dropdown width matches the input */
+.dropdown-menu {
+    width: 100%; /* Make dropdown same width as input */
+    max-height: 200px; /* Limit height of dropdown */
+    overflow-y: auto; /* Add scroll if needed */
+}
+.delete-btn {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+/* When the poster is hovered, show the delete button */
+.poster:hover .delete-btn {
+    opacity: 1;
+}
