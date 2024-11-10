@@ -4,8 +4,8 @@
     -moz-background-size: cover;
     -o-background-size: cover;
     background-size: cover;
-    filter: blur(5px);
-    -webkit-filter: blur(5px);
+    filter: blur(10px);
+    -webkit-filter: blur(10px);
     z-index: -1;
     opacity: 0.5;
     width: 100vw;

@@ -23,5 +23,10 @@ def search_movies():
     # Return the list as a JSON response
     return jsonify(result) # Converting to JSON for a proper response format
 
+@app.route('/find_similar_movies',methods=['POST'])
+def find_similar_movies():
+    movie_list=request.get("movie_list","")
+    return render_template('similar_movies.html')
+
 if __name__ =="__main__":
     app.run(debug =True)
