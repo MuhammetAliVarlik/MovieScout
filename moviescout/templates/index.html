@@ -58,6 +58,9 @@
             <!-- Film Posterleri -->
             <div class="row-md-6  d-flex justify-content-center align-items-center search-results">
             </div>
+            <div class="row-md-6 d-flex justify-content-center align-items-center mt-2">
+            <button type="button" class="btn btn-danger" id="findSimilarMoviesBtn">Search Similar Movies</button>
+            </div>
         </div>
         <script type="module" src="{{url_for('static', filename='js/index.js')}}"></script>
         <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
@@ -65,6 +68,9 @@
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
         <script>
             $(document).ready(function () {
+    // Array to keep track of selected movies
+    let selectedMovies = [];
+
     // Handle typing in the search input field and make an AJAX request
     $('#searchInput').on('keyup', function () {
         const movieName = $(this).val();
@@ -110,22 +116,34 @@
         const title = $(this).data('title');
         const posterUrl = $(this).data('poster');
 
-        // Add the movie poster to the search-results section
-        const movieHtml = `
-            <div class="poster d-flex justify-content-center align-items-center bg-black position-relative">
-                <img src="https://image.tmdb.org/t/p/w200/${posterUrl}" alt="${title}" class="img-fluid mx-auto d-block">
-                <!-- Delete button -->
-                <button class="delete-btn position-absolute top-0 end-0 p-1 bg-dark text-white">
-                    <i class="fa fa-times"></i>
-                </button>
-            </div>
-        `;
-        $('.search-results').append(movieHtml); // Append to the search-results section
+        // Check if the movie is already in the selectedMovies array to avoid duplicates
+        if (!selectedMovies.some(movie => movie.title === title)) {
+            // Add movie details to the selectedMovies array
+            selectedMovies.push({ title: title, poster: posterUrl });
+
+            // Add the movie poster to the search-results section
+            const movieHtml = `
+                <div class="poster d-flex justify-content-center align-items-center bg-black position-relative" data-title="${title}">
+                    <img src="https://image.tmdb.org/t/p/w200/${posterUrl}" alt="${title}" class="img-fluid mx-auto d-block">
+                    <!-- Delete button -->
+                    <button class="delete-btn position-absolute top-0 end-0 p-1 bg-dark text-white">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+            `;
+            $('.search-results').append(movieHtml); // Append to the search-results section
+        }
     });
 
     // Handle removal of poster on delete button click
     $(document).on('click', '.delete-btn', function () {
-        $(this).closest('.poster').remove(); // Remove the poster container
+        const title = $(this).closest('.poster').data('title');
+
+        // Remove the movie from selectedMovies array
+        selectedMovies = selectedMovies.filter(movie => movie.title !== title);
+
+        // Remove the poster container from the DOM
+        $(this).closest('.poster').remove();
     });
 
     // Hide dropdown if clicked outside
@@ -134,7 +152,39 @@
             $('#searchResults').removeClass('show');
         }
     });
+
+    // Example: Log the selectedMovies array to the console to see the current list
+    // You can replace this with any other action as needed
+    $('#findSimilarMoviesBtn').on('click', function() {
+        console.log("Selected Movies:", selectedMovies);
+    });
 });
+
+$('#findSimilarMoviesBtn').on('click', function () {
+    const selectedMovies = $('.search-results .poster');
+    const movieIds = [];
+
+    // Gather the titles of selected movies
+    selectedMovies.each(function () {
+        const movieTitle = $(this).data('title');
+        movieIds.push(movieTitle);
+    });
+
+    // Make an AJAX request to find similar movies
+    $.ajax({
+        url: '/find_similar_movies', 
+        type: 'POST',
+        data: { 'movies[]': movieIds },  // Send selected movie titles as an array
+        traditional: true,  // Ensures array is sent in correct format
+        success: function(response) {
+            window.location.href = '/similar_movies';
+        },
+        error: function(error) {
+            console.log('Error:', error);
+        }
+    });
+});
+
 
         </script>
     </body>

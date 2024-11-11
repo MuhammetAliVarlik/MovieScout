@@ -136,3 +136,19 @@ border:none;
 .poster:hover .delete-btn {
     opacity: 1;
 }
+
+
+/* High similarity (80% and above) - Green */
+.high-similarity {
+    background-color: #28a745;  /* Green */
+}
+
+/* Medium similarity (50% to 79%) - Yellow */
+.medium-similarity {
+    background-color: #ffc107;  /* Yellow */
+}
+
+/* Low similarity (below 50%) - Red */
+.low-similarity {
+    background-color: #dc3545;  /* Red */
+}
