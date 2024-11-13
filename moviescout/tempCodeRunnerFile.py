@@ -1,1 +1,1 @@
-search_movies
+total_similar_movies

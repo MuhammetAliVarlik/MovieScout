@@ -6,10 +6,23 @@ from sklearn.metrics.pairwise import linear_kernel
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 from config import Config
+import pickle
 
+# Base directory tanımlaması
 base_dir = os.path.abspath(os.path.dirname(__file__))    
-df = pd.read_csv(os.path.join(base_dir, "../data/processed/TMDB.csv"))
+print(base_dir)
+
+# CSV dosyasını okuma
+csv_path = os.path.join(base_dir, "..", "data", "processed", "TMDB.csv")
+df = pd.read_csv(csv_path)
 df['genres'] = df['genres'].fillna('')
+
+# TF-IDF matrisini yükleme
+tfidf_path = os.path.join(base_dir, "../models", "content.pkl")
+with open(tfidf_path, 'rb') as file:
+    tfidf_matrix = pickle.load(file)
+
+print("TF-IDF matrisi yüklendi.")
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -31,50 +44,69 @@ def search_movies():
     # Return the list as a JSON response
     return jsonify(result) # Converting to JSON for a proper response format
 
+from flask import session, jsonify, request
+import numpy as np
+import pandas as pd
+from sklearn.metrics.pairwise import cosine_similarity
+
 @app.route('/find_similar_movies', methods=['POST'])
 def find_similar_movies():
-    # Retrieve list of selected movie titles from the POST request
+    # Kullanıcıdan gelen seçilen film başlıklarını alıyoruz
     movie_list = request.form.getlist('movies[]')
-    
     if not movie_list:
         return jsonify({"error": "No movies selected"}), 400
 
-    # Find row indices for movies in the DataFrame that match the selected titles
+    # Seçilen filmleri DataFrame'den bulup indekslerini alıyoruz
     user_history_indices = []
     for movie_name in movie_list:
-        matched_rows = df[df['title'].str.contains(movie_name, case=False, na=False)]
-        user_history_indices.extend(matched_rows.index.tolist())  # Use indices, not IDs
+        # Tam eşleşen film başlıklarını buluyoruz
+        matched_rows = df[df['title']==movie_name]
+        
+        if matched_rows.empty:
+            return jsonify({"error": f"Movie '{movie_name}' not found in dataset"}), 400
+        
+        user_history_indices.extend(matched_rows.index.tolist())  # İndeksleri alıyoruz
 
     if not user_history_indices:
-        return jsonify({"error": "Selected movies not found in dataset"}), 400
+        return jsonify({"error": "No valid movies selected from dataset"}), 400
 
-    # Process genres column for TF-IDF
-    tfidf_vectorizer = TfidfVectorizer(stop_words='english')
-    tfidf_matrix = tfidf_vectorizer.fit_transform(df['genres'])
+    # Kullanıcı profilini, seçilen filmlerin tür vektörlerinin ortalaması olarak hesaplıyoruz
+    user_profile = np.mean(tfidf_matrix[user_history_indices], axis=0)
 
-    # Calculate the user profile by averaging the genre vectors of selected movies
-    user_profile = np.mean(tfidf_matrix[user_history_indices].toarray(), axis=0)
-
-    # Calculate similarity scores between user profile and all movie vectors
+    # Kullanıcı profili ile tüm filmler arasındaki benzerlik puanlarını hesaplıyoruz
     similarity_scores = cosine_similarity([user_profile], tfidf_matrix).flatten()
 
-    # Append similarity scores to the DataFrame and sort by similarity
+    # Benzerlik puanlarını DataFrame'e ekliyoruz ve benzerliğe göre sıralıyoruz
     df['similarity_score'] = similarity_scores
-    recommended_movies = df.sort_values(by='similarity_score', ascending=False).head(10)
 
-    # Shuffle the DataFrame
-    recommended_movies = recommended_movies.sample(frac=1).reset_index(drop=True)
+    # Seçilen filmleri önerilenler listesinden çıkarıyoruz
+    recommended_movies = df[~df['title'].isin(movie_list)]
 
-    # Convert to JSON response with relevant columns
-    response = recommended_movies.to_dict(orient='records')
-    
+    # Önerilen filmleri benzerlik puanına göre sıralıyoruz
+    recommended_movies = recommended_movies.sort_values(by='similarity_score', ascending=False)
+
+    # İlk 10 önerilen filmi alıyoruz (ilk film zaten kullanıcı tarafından seçilen filmler)
+    recommended_movies = recommended_movies.head(10)
+
+    # Önerilen filmleri JSON formatına çeviriyoruz
     recommendations = recommended_movies[['title','vote_average','vote_count','status','release_date','runtime','overview','poster_path', 'genres','backdrop_path', 'similarity_score']].to_dict(orient='records')
 
-    # Store the recommendations in the session for the next page
-    session['recommendations'] = recommendations
+    # Önerilen film sayısını hesaplıyoruz
+    total_similar_movies = len(recommended_movies)
 
-    # Return a success response (will be handled by AJAX for redirect)
-    return jsonify({'status': 'success'})
+    # Önerileri ve benzer film sayısını session'a kaydediyoruz
+    session['recommendations'] = recommendations
+    session['total_similar_movies'] = total_similar_movies
+
+    # Başarı durumu döndürüyoruz
+    return jsonify({
+        'status': 'success',
+        'recommendations': recommendations,
+        'total_similar_movies': total_similar_movies
+    })
+
+
+
 
 @app.route('/similar_movies')
 def similar_movies():

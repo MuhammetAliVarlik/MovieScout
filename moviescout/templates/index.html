@@ -16,13 +16,13 @@
         <!-- Navbar with background image -->
         <nav class="navbar navbar-expand-lg bg-black" id="navbar">
             <div class="container-fluid">
-                <a class="navbar-brand " href="#">MovieScout</a>
+                <a class="navbar-brand" href="#">MovieScout</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav">
-                        <li class="nav-item" >
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
                             <a class="nav-link active" aria-current="page" href="#">Home</a>
                         </li>
                         <li class="nav-item">
@@ -35,9 +35,16 @@
                             <a class="nav-link" href="#">Contact</a>
                         </li>
                     </ul>
+                    <!-- Heart icon with liked movies count that triggers the modal -->
+                    <div class="nav-item">
+                        <a class="nav-link text-white" href="#" id="likedMovies" data-bs-toggle="modal" data-bs-target="#likedMoviesModal">
+                            ❤️ <span id="likedMoviesCount">0</span>
+                        </a>
+                    </div>
                 </div>
             </div>
         </nav>
+        
         <div class="container h-100 search-container">
             <!-- Arama Formu -->
             <div class="row-md-2 d-flex justify-content-center align-items-center mt-5">
@@ -45,10 +52,8 @@
                     <div class="form mt-5">
                         <form id="searchForm"  method = "post">
                         <i class="fa fa-search"></i>
-                        <input type="text" class="form-control form-input" id="searchInput" placeholder="Search anything..." name = "movieName" id="movieName">
-                        <span class="left-pan"><i class="fa fa-arrow-right"></i></span>
+                        <input type="text" class="form-control form-input" id="searchInput" placeholder="Search anything..." name = "movieName" id="movieName" autocomplete="off">
                         <div id="searchResults" class="dropdown-menu">
-                            <!-- Results appear here -->
                         </div>
                         </form>
                     </div>
@@ -62,6 +67,28 @@
             <button type="button" class="btn btn-danger" id="findSimilarMoviesBtn">Search Similar Movies</button>
             </div>
         </div>
+
+
+        <div class="modal fade" id="likedMoviesModal" tabindex="-1" aria-labelledby="likedMoviesModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg ">
+                <div class="modal-content bg-dark">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="likedMoviesModalLabel">Liked Movies</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+
+                    </div>
+                    <div class="modal-body">
+                        <div id="likedMoviesList">
+                            <!-- Liked movie details will be dynamically inserted here -->
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <script type="module" src="{{url_for('static', filename='js/index.js')}}"></script>
         <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js" integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF" crossorigin="anonymous"></script>
@@ -70,7 +97,65 @@
             $(document).ready(function () {
     // Array to keep track of selected movies
     let selectedMovies = [];
+    var likedMovies = []; // List to hold liked movie details
 
+    // Function to update liked movies count in the navbar
+    function updateLikedMoviesCount() {
+            $("#likedMoviesCount").text(likedMovies.length);
+        }
+
+        // Function to render the liked movies list in the modal
+        function updateLikedMoviesList() {
+            const $likedMoviesList = $("#likedMoviesList");
+            $likedMoviesList.empty(); // Clear the list
+
+            // Add each liked movie's details as a card
+            likedMovies.forEach(function(movie) {
+                $likedMoviesList.append(`
+                    <div class="liked-movie-card bg-dark text-white p-3 rounded mb-3">
+                        <div class="d-flex align-items-center">
+                            <img src="https://image.tmdb.org/t/p/w200/${movie.poster_path}" class="img-fluid rounded me-3" style="width: 100px;">
+                            <div>
+                                <h5 class="fw-bold mb-1">${movie.title}</h5>
+                                <p class="mb-1">${movie.release_date} | ${movie.genres}</p>
+                                <p class="mb-1">Rating: ${movie.vote_average} / 10 (${movie.vote_average / 2} stars)</p>
+                            </div>
+                        </div>
+                        <p class="mt-3" style="font-size: 0.9rem;">${movie.overview}</p>
+                    </div>
+                `);
+            });
+        }
+
+
+    // Function to update the likedMovies cookie
+    function setCookie(name, value, days) {
+            const expires = new Date();
+            expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+            document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires.toUTCString()}; path=/`;
+        }
+
+        // Function to get the value of a cookie by name
+        function getCookie(name) {
+            const nameEQ = name + "=";
+            const ca = document.cookie.split(';');
+            for (let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length, c.length));
+            }
+            return null;
+        }
+
+
+    // Load liked movies from the cookie if available
+    const likedMoviesCookie = getCookie("likedMovies");
+        if (likedMoviesCookie) {
+            likedMovies = JSON.parse(likedMoviesCookie);
+            console.log("Loaded liked movies from cookie:", likedMovies);
+            updateLikedMoviesCount();
+            updateLikedMoviesList();
+        }
     // Handle typing in the search input field and make an AJAX request
     $('#searchInput').on('keyup', function () {
         const movieName = $(this).val();
@@ -161,23 +246,30 @@
 });
 
 $('#findSimilarMoviesBtn').on('click', function () {
-    const selectedMovies = $('.search-results .poster');
+    // Array to hold the titles of selected movies
     const movieIds = [];
 
-    // Gather the titles of selected movies
-    selectedMovies.each(function () {
-        const movieTitle = $(this).data('title');
-        movieIds.push(movieTitle);
+    // Iterate over each selected movie in the search results
+    $('.search-results .poster').each(function () {
+        const movieTitle = $(this).data('title');  // Get the movie title
+        movieIds.push(movieTitle);  // Add the title to the movieIds array
     });
+
+    // Check if we have selected any movies
+    if (movieIds.length === 0) {
+        alert("Please select at least one movie.");
+        return;
+    }
 
     // Make an AJAX request to find similar movies
     $.ajax({
-        url: '/find_similar_movies', 
+        url: '/find_similar_movies',
         type: 'POST',
         data: { 'movies[]': movieIds },  // Send selected movie titles as an array
         traditional: true,  // Ensures array is sent in correct format
         success: function(response) {
-            window.location.href = '/similar_movies';
+            // If request is successful, redirect or update the page
+            window.location.href = '/similar_movies'; // Or handle the response as needed
         },
         error: function(error) {
             console.log('Error:', error);

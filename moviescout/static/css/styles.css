@@ -137,18 +137,31 @@ border:none;
     opacity: 1;
 }
 
+/* Very High Similarity (80% and above) - Gold */
+.very-high-similarity {
+    background-color: #dc3545;  /* Red for low similarity */
+    color: white;  /* White text for contrast */
+    border: 2px solid #c82333;  /* Slight darker red border */
+}
 
-/* High similarity (80% and above) - Green */
+/* High Similarity (60% to 79%) - Green */
 .high-similarity {
-    background-color: #28a745;  /* Green */
+    background-color: #28a745;  /* Green for high similarity */
+    color: white;  /* White text for contrast */
+    border: 2px solid #218838;  /* Slight darker green border */
 }
 
-/* Medium similarity (50% to 79%) - Yellow */
+/* Medium Similarity (50% to 59%) - Yellow */
 .medium-similarity {
-    background-color: #ffc107;  /* Yellow */
+    background-color: #ffc107;  /* Yellow for medium similarity */
+    color: black;  /* Black text for contrast */
+    border: 2px solid #e0a800;  /* Slight darker yellow border */
 }
 
-/* Low similarity (below 50%) - Red */
+/* Low Similarity (below 50%) - Red */
 .low-similarity {
-    background-color: #dc3545;  /* Red */
+    background-color: #FFD700;  /* Gold for very high similarity */
+    color: white;  /* White text for better contrast */
+    border: 2px solid #e6b800;  /* Slight darker gold border */
+    
 }
