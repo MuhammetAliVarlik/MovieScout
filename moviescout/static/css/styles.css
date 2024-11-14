@@ -165,3 +165,23 @@ border:none;
     border: 2px solid #e6b800;  /* Slight darker gold border */
     
 }
+
+
+
+/* Additional styling for the chat bubbles */
+.chat-bubble {
+    padding: 15px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+    max-width: 75%;
+    color: #f8f9fa;
+}
+.chat-bubble.a1 {
+    background-color: #333333;
+    align-self: start;
+}
+.chat-bubble.a2 {
+    background-color: #d32f2f;
+    align-self: end;
+}
+

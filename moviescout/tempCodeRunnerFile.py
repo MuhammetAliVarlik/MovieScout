@@ -1,1 +1,1 @@
-total_similar_movies
+movie_chat
