@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, session
+from flask import Flask, render_template, request, jsonify, session,Response
 from flask_caching import Cache
 from func.moviesRecommendation import MovieRecommendationSystem
 from config import Config
@@ -21,8 +21,9 @@ def home():
 def search_movies():
     movie_name = request.form.get('movieName', '')
     filtered_df = movie_recommender.df[movie_recommender.df['title'].str.contains(movie_name, case=False, na=False)]
-    result = filtered_df[['title', 'poster_path']].to_dict(orient='records')
+    result = filtered_df[['title', 'vote_average', 'vote_count', 'status', 'release_date', 'runtime', 'overview', 'poster_path', 'genres', 'backdrop_path']].to_dict(orient='records')
     return jsonify(result)
+    
 
 @app.route('/find_similar_movies', methods=['POST'])
 def find_similar_movies():
@@ -47,8 +48,7 @@ def movie_chat():
 @app.route('/chat_movies', methods=['POST'])
 def chat_movies():
     movie_chat = request.form.get('movieChat')
-    response = movie_recommender.chat(movie_chat)
-    return jsonify({"movieChat": response})
+    return Response(movie_recommender.chat(movie_chat), mimetype='text/event-stream')
 
 if __name__ == "__main__":
     app.run(debug=True)

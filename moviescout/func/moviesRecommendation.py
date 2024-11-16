@@ -11,6 +11,7 @@ from langchain.callbacks import StreamingStdOutCallbackHandler
 from langchain.chains import RetrievalQA
 from sklearn.metrics.pairwise import cosine_similarity
 from flask import session
+import time
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -72,19 +73,26 @@ class MovieRecommendationSystem:
         
         Question: {question}
         Just give the answer in 1 or 2 sentences. Don't give spoilers.
+        ----------------------------------------------------------------
         Answer (brief and direct):
+        Format should be:
+        Your opinion about question.
+        <li>
+        <h5> Movie name - release date | genres | vote average </h5>
+        <p>Short overview about movie </p>
+        </li> 
         """
         
         callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
         
         self.llm = ChatLlamaCpp(
             model_path=os.path.join(CURRENT_DIR,"..", "..", "models", "Phi-3.5-mini-instruct-Q5_K_L.gguf"),
-            n_ctx=1024,
+            n_ctx=2048,
             verbose=True,
             use_mlock=True,
             n_gpu_layers=16,
             n_threads=8,
-            n_batch=1024,
+            n_batch=2048,
             callback_manager=callback_manager
         )
         
@@ -132,9 +140,7 @@ class MovieRecommendationSystem:
 
     def chat(self, query):
         """Generate a response to the user's query using the LLM"""
-        # Generate the response from the LLM (assuming it returns a list of AIMessage objects)
-        response = self.llm.invoke([query])
-        print(response.type)
-        # Ensure the response is a list and contains AIMessage objects, then access .content
-        return response.content  # Return only the content of the first AIMessage
+        chunks = []
+        for chunk in self.llm.stream(query):
+            yield f"{chunk.content}"
 
