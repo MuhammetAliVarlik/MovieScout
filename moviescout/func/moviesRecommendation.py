@@ -11,7 +11,9 @@ from langchain.callbacks import StreamingStdOutCallbackHandler
 from langchain.chains import RetrievalQA
 from sklearn.metrics.pairwise import cosine_similarity
 from flask import session
-import time
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
+from langchain.memory import ConversationBufferMemory
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -67,45 +69,43 @@ class MovieRecommendationSystem:
 
     def _initialize_llm(self):
         """Initialize the LLM model and prompt"""
-        template = """You are a movie recommendation system. Based on the context provided, recommend a movie:
+        template = """
+        You are a movie recommendation system. Based on the provided context, recommend at least three movies that fit the user's needs. Your tone can be formal or conversational, adapting to the user's context.
+
         
         Context: {context}
-        
         Question: {question}
-        Just give the answer in 1 or 2 sentences. Don't give spoilers.
-        ----------------------------------------------------------------
-        Answer (brief and direct):
-        Format should be:
-        Your opinion about question.
-        <li>
-        <h5> Movie name - release date | genres | vote average </h5>
-        <p>Short overview about movie </p>
-        </li> 
+
+        Instructions: Respond in 1-2 sentences without spoilers. You can be conversational if the context feels casual.
+
         """
         
         callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
         
         self.llm = ChatLlamaCpp(
-            model_path=os.path.join(CURRENT_DIR,"..", "..", "models", "Phi-3.5-mini-instruct-Q5_K_L.gguf"),
-            n_ctx=2048,
-            verbose=True,
+            model_path=os.path.join(CURRENT_DIR,"..", "..", "models", "Llama-3.2-1B-Instruct-Q6_K_L.gguf"),
             use_mlock=True,
-            n_gpu_layers=16,
-            n_threads=8,
-            n_batch=2048,
-            callback_manager=callback_manager
+            callback_manager=callback_manager,
+            n_ctx=1024,  # Daha küçük bağlam
+            verbose=False,
+            n_gpu_layers=48,
+            n_threads=16,
+            n_batch=1024 
         )
         
         prompt = PromptTemplate(
             template=template, 
             input_variables=['context', 'question']
         )
-        
-        self.chain = RetrievalQA.from_chain_type(
-            self.llm,
-            retriever=self.db.as_retriever(search_kwargs={"k": 3}),
-            return_source_documents=False,
-            chain_type_kwargs={"prompt": prompt}
+        def format_docs(docs):
+            return "\n\n".join(doc.page_content for doc in docs)
+        retriever = self.db.as_retriever(search_kwargs={"k": 3})
+
+        self.chain = (
+            {"context": retriever | format_docs, "question": RunnablePassthrough()}
+            | prompt
+            | self.llm
+            | StrOutputParser()
         )
         
         print("LLM and RetrievalQA chain initialized.")
@@ -140,7 +140,6 @@ class MovieRecommendationSystem:
 
     def chat(self, query):
         """Generate a response to the user's query using the LLM"""
-        chunks = []
-        for chunk in self.llm.stream(query):
-            yield f"{chunk.content}"
+        for chunk in self.chain.stream(query):
+            yield f"{chunk}"
 

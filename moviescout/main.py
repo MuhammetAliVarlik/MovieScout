@@ -23,6 +23,14 @@ def search_movies():
     filtered_df = movie_recommender.df[movie_recommender.df['title'].str.contains(movie_name, case=False, na=False)]
     result = filtered_df[['title', 'vote_average', 'vote_count', 'status', 'release_date', 'runtime', 'overview', 'poster_path', 'genres', 'backdrop_path']].to_dict(orient='records')
     return jsonify(result)
+
+@app.route('/search_chat_movies', methods=['POST'])
+def search_chat_movies():
+    movie_name = request.form.get('movieName', '').strip()
+    filtered_df = movie_recommender.df[movie_recommender.df['title'].str.strip().str.lower() == movie_name.lower()]
+    result = filtered_df[['title', 'vote_average', 'vote_count', 'status', 'release_date', 'runtime', 'overview', 'poster_path', 'genres', 'backdrop_path']].to_dict(orient='records')
+    return jsonify(result)
+
     
 
 @app.route('/find_similar_movies', methods=['POST'])
