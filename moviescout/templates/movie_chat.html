@@ -3,48 +3,15 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>MovieScout - Find Similar Movies</title>
+        <title>MovieScout - Chat with Movies</title>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
         <link rel="stylesheet" href="../static//css/styles.css">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" 
         rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
     </head>
     <body class="bg-dark">
-        <div class="background-image">
-
-        </div>
-        <!-- Navbar with background image -->
-        <nav class="navbar navbar-expand-lg bg-black" id="navbar">
-            <div class="container-fluid">
-                <a class="navbar-brand" href="#">MovieScout</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav me-auto">
-                        <li class="nav-item">
-                            <a class="nav-link active" aria-current="page" href="#">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#">About</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#">Services</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#">Contact</a>
-                        </li>
-                    </ul>
-                    <!-- Heart icon with liked movies count that triggers the modal -->
-                    <div class="nav-item">
-                        <a class="nav-link text-white" href="#" id="likedMovies" data-bs-toggle="modal" data-bs-target="#likedMoviesModal">
-                            ❤️ <span id="likedMoviesCount">0</span>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </nav>
         
+        {% include 'navbar.html' %}
         <div class="container mt-5 mb-5 pb-4">
             <div class="d-flex flex-column align-items-start" id="chatContainer">
                 <!-- Chat bubbles will be appended here dynamically -->
@@ -65,258 +32,16 @@
             </div>
         </div>
 
+        {% include 'modal.html' %}
 
-        <div class="modal fade" id="likedMoviesModal" tabindex="-1" aria-labelledby="likedMoviesModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg ">
-                <div class="modal-content bg-dark">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="likedMoviesModalLabel">Liked Movies</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        
 
-                    </div>
-                    <div class="modal-body">
-                        <div id="likedMoviesList">
-                            <!-- Liked movie details will be dynamically inserted here -->
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <script type="module" src="{{url_for('static', filename='js/index.js')}}"></script>
+        
         <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js" integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF" crossorigin="anonymous"></script>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-        <script>
-            $(document).ready(function () {
-    // Array to keep track of selected movies
-    let selectedMovies = [];
-    var likedMovies = []; // List to hold liked movie details
-    var movieName=[];
-    var final_chunk="";
-    // Function to update liked movies count in the navbar
-    function updateLikedMoviesCount() {
-            $("#likedMoviesCount").text(likedMovies.length);
-        }
+        <script src="{{url_for('static', filename='js/main.js')}}"></script>
+        <script src="{{url_for('static', filename='js/movie_chat.js')}}"></script>
 
-        // Function to render the liked movies list in the modal
-        function updateLikedMoviesList() {
-            const $likedMoviesList = $("#likedMoviesList");
-            $likedMoviesList.empty(); // Clear the list
-
-            // Add each liked movie's details as a card
-            likedMovies.forEach(function(movie) {
-                $likedMoviesList.append(`
-                    <div class="liked-movie-card bg-dark text-white p-3 rounded mb-3">
-                        <div class="d-flex align-items-center">
-                            <img src="https://image.tmdb.org/t/p/w200/${movie.poster_path}" class="img-fluid rounded me-3" style="width: 100px;">
-                            <div>
-                                <h5 class="fw-bold mb-1">${movie.title}</h5>
-                                <p class="mb-1">${movie.release_date} | ${movie.genres}</p>
-                                <p class="mb-1">Rating: ${movie.vote_average} / 10 (${movie.vote_average / 2} stars)</p>
-                            </div>
-                        </div>
-                        <p class="mt-3" style="font-size: 0.9rem;">${movie.overview}</p>
-                    </div>
-                `);
-            });
-        }
-
-
-    // Function to update the likedMovies cookie
-    function setCookie(name, value, days) {
-            const expires = new Date();
-            expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
-            document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires.toUTCString()}; path=/`;
-        }
-
-        // Function to get the value of a cookie by name
-        function getCookie(name) {
-            const nameEQ = name + "=";
-            const ca = document.cookie.split(';');
-            for (let i = 0; i < ca.length; i++) {
-                let c = ca[i];
-                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-                if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length, c.length));
-            }
-            return null;
-        }
-
-
-    // Load liked movies from the cookie if available
-    const likedMoviesCookie = getCookie("likedMovies");
-        if (likedMoviesCookie) {
-            likedMovies = JSON.parse(likedMoviesCookie);
-            console.log("Loaded liked movies from cookie:", likedMovies);
-            updateLikedMoviesCount();
-            updateLikedMoviesList();
-        }
-        function scrollToBottom() {
-                    const chatContainer = $('#chatContainer');
-                    chatContainer.scrollTop(chatContainer[0].scrollHeight);
-                }
-
-                // Handle typing in the search input field and make an AJAX request
-                // Handle typing in the search input field and make an AJAX request
-                $('#chatInput').on('keydown', function (event) {
-                    if (event.keyCode === 13) {  // Enter key
-                        event.preventDefault(); // Prevent form submission
-
-                        const movieChat = $(this).val(); // Get the input value
-
-                        if (movieChat.trim() !== "") { // Check if input is not empty
-                            // Add user's message to the chat container
-                            $('#chatContainer').append(`
-                                <div class="chat-bubble a1">
-                                    ${movieChat}
-                                </div>
-                            `);
-                            $('#chatContainer').append(`
-                                <div class="chat-bubble a2">
-                                </div>
-                            `);
-
-                            // Clear the input field after sending the message
-                            $(this).val('');
-
-                            // Scroll to the bottom to show the new message
-                            scrollToBottom();
-
-                            // Make AJAX request to the server
-                            $.ajax({
-                                url: '/chat_movies', // Flask endpoint
-                                type: 'POST',
-                                data: { movieChat: movieChat },
-                                xhrFields: {onprogress: function (e) {
-
-                                    // Get the response text from the stream
-                                    const chunk = e.target.responseText;
-                                    let formattedContent = formatTextContent(chunk);
-                                    final_chunk=formattedContent;
-                                    // Update the chat container with the streamed chunk
-                                    $('#chatContainer .chat-bubble.a2').last().html(formattedContent); // Update the last response bubble
-
-                                    // Scroll to the bottom to show the new response
-                                    scrollToBottom();
-                                }
-                                },
-                                success: function (response) {
-    movieName = extractMovieTitles(final_chunk); // Film başlıklarını çıkartıyoruz
-    console.log(movieName);
-
-    // Eklenen filmleri tutacak bir dizi
-    let addedMovies = [];
-
-    if (movieName && movieName.length > 0) {
-        // Her bir film adı için tek tek AJAX isteği gönderiyoruz
-        movieName.forEach(function (movie) {
-            $.ajax({
-                url: '/search_chat_movies', // Flask API endpoint
-                type: 'POST',
-                data: { movieName: movie }, // Tek bir film adı ile istek gönderiyoruz
-                success: function (response) {
-                    console.log(response);
-
-                    // Dönen her bir film için HTML içeriği oluşturuyoruz
-                    response.forEach(function (movie) {
-                        // Eğer film zaten eklenmemişse
-                        if (!addedMovies.includes(movie.title)) {
-                            // Eklenmiş filmleri diziye ekle
-                            addedMovies.push(movie.title);
-
-                            // HTML içeriği oluştur ve ekle
-                            $('#chatContainer .chat-bubble.a2').last().append(
-                        `<div class="liked-movie-card bg-dark text-white p-3 rounded mb-3">
-                            <div class="d-flex align-items-center">
-                                <img src="https://image.tmdb.org/t/p/w200/${movie.poster_path}" class="img-fluid rounded me-3" style="width: 100px;">
-                                <div>
-                                    <h5 class="fw-bold mb-1">${movie.title}</h5>
-                                    <p class="mb-1">${movie.release_date} | ${movie.genres}</p>
-                                    <p class="mb-1">Rating: ${movie.vote_average} / 10 (${movie.vote_average / 2} stars)</p>
-                                </div>
-                            </div>
-                            <p class="mt-3" style="font-size: 0.9rem;">${movie.overview}</p>
-                            <!-- Like Button -->
-                            <button class="like-btn btn btn-outline-light mt-2" data-title="${movie.title}" data-poster="${movie.poster_path}" onclick="updateLikedMoviesList">
-                                <i class="fa fa-thumbs-up"></i> Like
-                            </button>
-                        </div>`
-                    );
-                            
-                        }
-                    });
-                },
-                error: function (error) {
-                    console.log('Error:', error); // Hata durumunda konsola yaz
-                }
-            });
-        });
-    }
-
-    console.log(response); // Gelen yanıtı konsola yazıyoruz
-
-    final_chunk = ""; // final_chunk'i sıfırlıyoruz
-},
-
-                                error: function (error) {
-                                    console.log('Error:', error); // Handle error
-                                }
-                            });
-                            
-                        }
-                    }
-                });
-                // Function to format the received chunk into HTML with headings and paragraphs
-                function formatTextContent(data) {
-                let result = data;
-                // 1. ve 2. gibi numaralandırmalar için <li> ile sarma
-                result = result.replace(/^(\d+\.\s+)(.*)$/gm, '<li>$2</li>');
-                
-                // ** Some text ** gibi ifadeleri <h4> ile sarmak
-                result = result.replace(/\*\*([^\*]+)\*\*/g, '<h4>$1</h4>');
-                
-                // - Some text gibi ifadeleri <ul> ile sarmak
-                result = result.replace(/^- (.*)$/gm, '<ul><li>$1</li></ul>');
-                
-                // Diğer metinleri <p> ile sarmak
-                result = result.replace(/^(?!<)(.*)$/gm, '<p>$1</p>');
-                
-                return result;
-}
-
-function extractMovieTitles(inputText) {
-    // Farklı tırnak işaretlerini destekleyen regex
-    const regex = /["“”‘’*]{2}([^"“”‘’*]+)["“”‘’*]{2}\s?\(\d{4}\)|["“”‘’]([^"“”‘’]+)["“”‘’]\s?\(\d{4}\)|["“”‘’*]{2}([^"“”‘’*]+)["“”‘’*]{2}|["“”‘’]([^"“”‘’]+)/g;
-    let matches = [];
-    let match;
-    
-    // Regex ile metinde eşleşmeleri bul
-    while ((match = regex.exec(inputText)) !== null) {
-        if (match[1]) {
-            // Çift yıldız ve yıl olan
-            matches.push(match[1]);
-        } else if (match[2]) {
-            // Tırnak ve yıl olan
-            matches.push(match[2]);
-        } else if (match[3]) {
-            // Sadece çift yıldız olan
-            matches.push(match[3]);
-        } else if (match[4]) {
-            // Sadece tırnak olan
-            matches.push(match[4]);
-        }
-    }
-    
-    return matches;
-}
-
-
-});
-
-
-        </script>
     </body>
 </html>

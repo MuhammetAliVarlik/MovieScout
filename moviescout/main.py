@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify, session,Response
 from flask_caching import Cache
-from func.moviesRecommendation import MovieRecommendationSystem
+from func.moviesRecommendationEngine import MovieRecommendationEngine
+from func.moviesRAG import MovieRecommendationRAG
 from config import Config
  # Assuming the class is in this file
 
@@ -11,8 +12,8 @@ cache = Cache(config={'CACHE_TYPE': 'simple'})  # Use simple in-memory cache for
 cache.init_app(app)
 
 # Instantiate the recommendation system
-movie_recommender = MovieRecommendationSystem()
-
+movie_recommender = MovieRecommendationEngine()
+movie_rag=None
 @app.route('/')
 def home():
     return render_template('index.html')
@@ -51,12 +52,14 @@ def similar_movies():
 
 @app.route('/movie_chat')
 def movie_chat():
+    global movie_rag
+    movie_rag=MovieRecommendationRAG()
     return render_template('movie_chat.html')
 
 @app.route('/chat_movies', methods=['POST'])
 def chat_movies():
     movie_chat = request.form.get('movieChat')
-    return Response(movie_recommender.chat(movie_chat), mimetype='text/event-stream')
+    return Response(movie_rag.chat(movie_chat), mimetype='text/event-stream')
 
 if __name__ == "__main__":
     app.run(debug=True)
