@@ -289,23 +289,24 @@
 
 function extractMovieTitles(inputText) {
     // Farklı tırnak işaretlerini destekleyen regex
-    const regex = /["“”‘’*]{2}([^"“”‘’*]+)["“”‘’*]{2}\s?\(\d{4}\)|["“”‘’]([^"“”‘’]+)["“”‘’]\s?\(\d{4}\)|["“”‘’]([^"“”‘’]+)/g;
+    const regex = /["“”‘’*]{2}([^"“”‘’*]+)["“”‘’*]{2}\s?\(\d{4}\)|["“”‘’]([^"“”‘’]+)["“”‘’]\s?\(\d{4}\)|["“”‘’*]{2}([^"“”‘’*]+)["“”‘’*]{2}|["“”‘’]([^"“”‘’]+)/g;
     let matches = [];
     let match;
     
     // Regex ile metinde eşleşmeleri bul
     while ((match = regex.exec(inputText)) !== null) {
-        // Çift yıldızlar içinde olan başlıkları al
         if (match[1]) {
+            // Çift yıldız ve yıl olan
             matches.push(match[1]);
-        } 
-        // Tırnaklar içinde olan başlıkları al (yıl ile birlikte)
-        else if (match[2]) {
+        } else if (match[2]) {
+            // Tırnak ve yıl olan
             matches.push(match[2]);
-        }
-        // Sadece tırnak içindeki başlıkları al (yıl olmadan)
-        else if (match[3]) {
+        } else if (match[3]) {
+            // Sadece çift yıldız olan
             matches.push(match[3]);
+        } else if (match[4]) {
+            // Sadece tırnak olan
+            matches.push(match[4]);
         }
     }
     

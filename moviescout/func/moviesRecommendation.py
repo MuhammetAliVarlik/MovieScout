@@ -14,6 +14,11 @@ from flask import session
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 from langchain.memory import ConversationBufferMemory
+from langchain.chains import create_history_aware_retriever 
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.messages import HumanMessage,AIMessage
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain.chains import create_retrieval_chain
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -22,7 +27,8 @@ class MovieRecommendationSystem:
                  persist_directory=None, 
                  csv_file_path=None, 
                  tfidf_file_path=None):
-        
+        self.chat_history = []
+
         # Set default paths relative to the current directory
         self.embedding_model = embedding_model
         self.persist_directory = persist_directory or os.path.join(CURRENT_DIR,".." ,"..", "models", "chroma_db")
@@ -69,16 +75,6 @@ class MovieRecommendationSystem:
 
     def _initialize_llm(self):
         """Initialize the LLM model and prompt"""
-        template = """
-        You are a movie recommendation system. Based on the provided context, recommend at least three movies that fit the user's needs. Your tone can be formal or conversational, adapting to the user's context.
-
-        
-        Context: {context}
-        Question: {question}
-
-        Instructions: Respond in 1-2 sentences without spoilers. You can be conversational if the context feels casual.
-
-        """
         
         callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
         
@@ -86,28 +82,54 @@ class MovieRecommendationSystem:
             model_path=os.path.join(CURRENT_DIR,"..", "..", "models", "Llama-3.2-1B-Instruct-Q6_K_L.gguf"),
             use_mlock=True,
             callback_manager=callback_manager,
-            n_ctx=1024,  # Daha küçük bağlam
+            n_ctx=1024,
             verbose=False,
             n_gpu_layers=48,
             n_threads=16,
-            n_batch=1024 
+            n_batch=512 
         )
-        
-        prompt = PromptTemplate(
-            template=template, 
-            input_variables=['context', 'question']
-        )
-        def format_docs(docs):
-            return "\n\n".join(doc.page_content for doc in docs)
-        retriever = self.db.as_retriever(search_kwargs={"k": 3})
 
-        self.chain = (
-            {"context": retriever | format_docs, "question": RunnablePassthrough()}
-            | prompt
-            | self.llm
-            | StrOutputParser()
+        contextualize_q_system_prompt = """
+        Given a chat history and the latest user question \
+        which might reference context in the chat history, formulate a standalone question \
+        which can be understood without the chat history. Do NOT answer the question, \
+        just reformulate it if needed and otherwise return it as is.
+        """
+
+        contextualize_q_prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", contextualize_q_system_prompt),
+                MessagesPlaceholder("chat_history"),
+                ("human", "{input}"),
+            ]
         )
-        
+        retriever = self.db.as_retriever(search_kwargs={"k": 1})
+
+        history_aware_retriever = create_history_aware_retriever(
+            self.llm,  
+            retriever, 
+            contextualize_q_prompt 
+        )
+        qa_system_prompt = """
+        You are a movie recommendation system. Based on the provided context, recommend at least three movies that fit the user's needs. Your tone can be formal or conversational, adapting to the user's context. 
+        Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know.Use three sentences maximum and keep the answer concise.
+
+        Context: {context}
+
+        Answer:
+        Recommend at least one movie with their titles enclosed in double quotes, and provide brief descriptions for each without spoilers.
+        """
+     
+        qa_prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", qa_system_prompt),
+                MessagesPlaceholder("chat_history"),
+                ("human", "{input}"),
+            ]
+        )
+        question_answer_chain = create_stuff_documents_chain(self.llm, qa_prompt)
+
+        self.rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
         print("LLM and RetrievalQA chain initialized.")
     
     def get_recommendations(self, movie_list):
@@ -140,6 +162,17 @@ class MovieRecommendationSystem:
 
     def chat(self, query):
         """Generate a response to the user's query using the LLM"""
-        for chunk in self.chain.stream(query):
-            yield f"{chunk}"
+        full_answer = ""  # Collect the complete response here
+        for chunk in self.rag_chain.stream({"input": query, "chat_history": self.chat_history}):
+            # Extract and yield only the 'answer' part of the chunk
+            answer_part = chunk.get("answer", "")  # Use `.get()` to avoid KeyError
+            full_answer += answer_part
+            yield answer_part  # Yield only the 'answer' field
+
+        # Update chat history with the full query and the full response
+        self.chat_history.extend([
+            HumanMessage(content=query),
+            AIMessage(content=full_answer)
+        ])
+
 
