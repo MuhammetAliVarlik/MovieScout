@@ -52,7 +52,7 @@ class MovieRecommendationRAG:
         callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
         
         self.llm = ChatLlamaCpp(
-            model_path=os.path.join(CURRENT_DIR, "..", "..", "models", "Phi-3-mini-4k-instruct-q4.gguf"),
+            model_path=os.path.join(CURRENT_DIR, "..", "..", "models", "Llama-3.2-1B-Instruct-Q6_K_L.gguf"),
             use_mlock=True,
             callback_manager=callback_manager,
             n_ctx=1024,
@@ -63,19 +63,16 @@ class MovieRecommendationRAG:
         )
 
         contextualize_q_system_prompt = """
-        Given a chat history and the latest user question \
-        which might reference context in the chat history, formulate a standalone question \
-        which can be understood without the chat history. 
-        Do NOT answer the question, just reformulate it if needed and otherwise return it as is.
+        Reformulate the user's latest question into a standalone version that doesn't rely on the chat history. 
+        If no changes are needed, return the question as is. Do NOT answer the question.
         """
 
-        contextualize_q_prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", contextualize_q_system_prompt),
-                MessagesPlaceholder("chat_history"),
-                ("human", "{input}"),
-            ]
-        )
+        contextualize_q_prompt = ChatPromptTemplate.from_messages([
+            ("system", contextualize_q_system_prompt),
+            MessagesPlaceholder("chat_history"),
+            ("human", "{input}")
+        ])
+
         retriever = self.db.as_retriever(search_kwargs={"k": 1})
 
         history_aware_retriever = create_history_aware_retriever(
@@ -84,22 +81,21 @@ class MovieRecommendationRAG:
             contextualize_q_prompt 
         )
         qa_system_prompt = """
-        You are a movie recommendation system. Based on the provided context, recommend at least three movies that fit the user's needs. Your tone can be formal or conversational, adapting to the user's context. 
-        Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know.Use three sentences maximum and keep the answer concise.
+        You are a movie recommendation system. Based on the provided context, recommend at least three movies that fit the user's needs. Adapt your tone to the user's context (formal or conversational). 
+        Use the retrieved context to answer the question. If you don't know the answer, say so. Limit your response to three sentences, keeping it concise.
 
         Context: {context}
 
         Answer:
-        Recommend at least one movie with their titles enclosed in double quotes, and provide brief descriptions for each without spoilers.
+        Recommend at least one movie with titles enclosed in double quotes, and provide brief descriptions for each without spoilers.
         """
-     
-        qa_prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", qa_system_prompt),
-                MessagesPlaceholder("chat_history"),
-                ("human", "{input}"),
-            ]
-        )
+
+        qa_prompt = ChatPromptTemplate.from_messages([
+            ("system", qa_system_prompt),
+            MessagesPlaceholder("chat_history"),
+            ("human", "{input}")
+        ])
+
         question_answer_chain = create_stuff_documents_chain(self.llm, qa_prompt)
 
         self.rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)

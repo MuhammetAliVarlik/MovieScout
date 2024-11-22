@@ -49,7 +49,7 @@ def similar_movies():
     recommendations = session.get('recommendations', [])
     print(recommendations)
     return render_template('similar_movies.html', recommendations=recommendations)
-
+@cache.cached(timeout=600)
 @app.route('/movie_chat')
 def movie_chat():
     global movie_rag

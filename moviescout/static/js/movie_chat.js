@@ -1,18 +1,33 @@
+function addMoviesToList(button)
+    {   var $button=$(button);
+        const movieDetails = {
+            title: $button.data("movie-title"),
+            similarity_score: $button.data("movie-similarity"), 
+            release_date: $button.data("movie-release"),
+            genres: $button.data("movie-genres"),
+            overview: $button.data("movie-overview"),
+            poster_path: $button.data("movie-poster"),
+            vote_average: $button.data("movie-vote")
+        };
+        const isMovieLiked = likedMovies.some(movie => movie.title === movieDetails.title);
+
+        if (!isMovieLiked) {
+            // Add the movie to the list if not already liked
+            likedMovies.push(movieDetails);
+            // Store likedMovies list in localStorage
+            saveLikedMovies();
+            updateLikedMoviesCount(likedMovies);
+            updateLikedMoviesList(likedMovies);
+
+            
+        }
+    };
+
 $(document).ready(function () 
 {
     // Array to keep track of selected movies
     var movieName=[];
     var final_chunk="";
-    
-    function scrollToBottom() 
-    {
-        const chatContainer = $('#chatContainer');
-        chatContainer.scrollTop(chatContainer[0].scrollHeight);
-    }
-
-    function addMoviesToList(){
-
-    };
 
     // Handle typing in the search input field and make an AJAX request
     $('#chatInput').on('keydown', function (event) 
@@ -31,15 +46,17 @@ $(document).ready(function ()
                     </div>
                 `);
                 $('#chatContainer').append(`
-                    <div class="chat-bubble a2">
+                    <div class="chat-bubble a2 typing">
+                        <div class="typing-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
                     </div>
                 `);
 
                 // Clear the input field after sending the message
                 $(this).val('');
-
-                // Scroll to the bottom to show the new message
-                scrollToBottom();
 
                 // Make AJAX request to the server
                 $.ajax(
@@ -50,15 +67,13 @@ $(document).ready(function ()
                         xhrFields: {
                             onprogress: function (e) 
                             {
+                                
                                 // Get the response text from the stream
                                 const chunk = e.target.responseText;
                                 let formattedContent = formatTextContent(chunk);
                                 final_chunk=formattedContent;
                                 // Update the chat container with the streamed chunk
                                 $('#chatContainer .chat-bubble.a2').last().html(formattedContent); // Update the last response bubble
-
-                                // Scroll to the bottom to show the new response
-                                scrollToBottom();
                             }
                     },
                     success: function (response) 
@@ -106,9 +121,18 @@ $(document).ready(function ()
                                                         <p class="mt-3" style="font-size: 0.9rem;">${movie.overview}</p>
 
                                                         <!-- Like Button -->
-                                                        <button class="like-btn btn btn-outline-light mt-2" data-title="${movie.title}" data-poster="${movie.poster_path}" onclick="addMoviesToList()">
-                                                        <i class="fa fa-thumbs-up"></i> Like
+                                                        <button class="like-btn btn btn-outline-light mt-2" 
+                                                                data-movie-title="${movie.title}" 
+                                                                data-movie-similarity="${movie.similarity_score}" 
+                                                                data-movie-release="${movie.release_date}" 
+                                                                data-movie-genres="${movie.genres}" 
+                                                                data-movie-overview="${movie.overview}" 
+                                                                data-movie-poster="${movie.poster_path}" 
+                                                                data-movie-vote="${movie.vote_average}" 
+                                                                onclick="addMoviesToList(this)">
+                                                            <i class="fa fa-thumbs-up"></i> Like
                                                         </button>
+
                                                     </div>`
                                                     );
 
