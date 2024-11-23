@@ -12,14 +12,14 @@
     </head>
     <body class="bg-dark">
         
-        {% include 'navbar.html' %}
+        {% include 'partials/navbar.html' %}
         
         <div class="demo mt-3">
             <div class="demo__content">
               <div class="demo__card-cont">
                 {% if recommendations %}
                 {% for movie in recommendations %}
-                <div class="demo__card"data-movie-title="{{ movie['title'] }}"data-movie-similarity="{{ (movie['similarity_score'] * 100) | round(1) }}"data-movie-release="{{ movie['release_date'][:4] }}"data-movie-genres="{{ movie['genres'] }}"data-movie-overview="{{ movie['overview'] }}"data-movie-poster="{{ movie['poster_path'] }}"data-movie-vote="{{ movie['vote_average'] }}">
+                <div class="demo__card" data-title="{{ movie['title'] }}"data-similarity="{{ (movie['similarity_score'] * 100) | round(1) }}"data-release="{{ movie['release_date'][:4] }}"data-genres="{{ movie['genres'] }}"data-overview="{{ movie['overview'] }}"data-poster="{{ movie['poster_path'] }}"data-vote="{{ movie['vote_average'] }}">
                     <div class="d-flex flex-column justify-content-center align-items-center demo__card__top bg-black rounded-top-3" style="position: relative;">
                         <!-- Similarity Score -->
                         <div class="similarity-score position-absolute top-0 end-0 p-2 text-white rounded-3 me-3 mt-3 
@@ -52,34 +52,33 @@
                         <!-- Poster image -->
                         <img src="https://image.tmdb.org/t/p/w200/{{ movie['poster_path'] }}" class="img-fluid demo__card__img m-3 rounded-3 position-absolute bottom-0 start-0">
                     </div>
-                    
-                    
-                    
-                    <!-- Alt bölüm için içerik düzeni -->
+
+                    <!-- Content layout for the bottom section -->
                     <div class="demo__card__btm bg-black p-3 rounded-bottom-3">
                         <div class="container">
                             
                             <div class="row">
                                 
-                                
                                 <div class="col-12">
-                                    <!-- Başlık için daha büyük font ve border altı -->
-                                    <p class="demo__card__we text-white rounded position-relative top-0 start-0 fw-bold pb-2 mb-2" style="font-size: 1.1rem; line-height: 1.5rem;">{{ movie['title'] }}</p>
+                                    <!-- Larger font and bottom border for the title -->
+                                    <p class="demo__card__we text-white rounded position-relative top-0 start-0 fw-bold pb-2 mb-2" style="font-size: 1.1rem; line-height: 1.5rem;">
+                                        {{ movie['title'] }}
+                                    </p>
                                 </div>
                                 <div class="col-12">
-                                    <!-- Açıklama için küçük font ve border altı -->
+                                    <!-- Smaller font and bottom border for the description -->
                                     <p class="demo__card__we text-white position-relative top-0 start-0 pb-2 mb-2" style="font-size: 0.8rem; line-height: 1.2rem; border-bottom: 0.1rem rgba(255,255,255,0.1) solid; 
-                                    display: -webkit-box;line-clamp:6; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; height: 7.2rem;">
+                                    display: -webkit-box; line-clamp: 6; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; height: 7.2rem;">
                                         {{ movie['overview'] }}
                                     </p>
                                 </div>
                                 <div class="col-12">
-                                    <!-- Tarih ve tür için küçük font ve border altı -->
+                                    <!-- Smaller font and bottom border for the release date and genre -->
                                     <p class="demo__card__we text-white position-relative top-0 start-0 pb-2 mb-2" style="font-size: 0.8rem; line-height: 1.2rem; border-bottom: 0.1rem rgba(255,255,255,0.1) solid;">
                                         {{ movie['release_date'][:4] }} | {{ movie['genres'] }}
                                     </p>
                                 </div>
-                
+
                                 <div class="col-12 d-flex align-items-center">
                                     <span class="text-warning fs-3 me-2">
                                         {% set stars = (movie['vote_average'] / 2) | round(0) %}
@@ -96,11 +95,10 @@
                                     </span>
                                 </div>
                                 
-                                
-                                
                             </div>
                         </div>
                     </div>
+
                     
                     <!-- Card choices -->
                     <div class="demo__card__choice m--reject"></div>
@@ -116,7 +114,8 @@
               </div>
             </div>
           </div>
-          {% include 'modal.html' %}
+          {% include 'partials/liked_modal.html' %}
+          {% include 'partials/details_modal.html' %}
           
     
 

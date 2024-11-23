@@ -27,7 +27,7 @@ $('#searchInput').on('keyup', function ()
                 // Create dropdown items dynamically for each movie result
                 response.forEach(movie => {
                     dropdown.append(`
-                        <a href="#" class="dropdown-item" data-title="${movie.title}" data-poster="${movie.poster_path}">
+                        <a href="#" class="dropdown-item" data-title="${movie.title}" data-overview="${movie.overview}" data-vote="${movie.vote_average}" data-release="${movie.release_date}" data-poster="${movie.poster_path}">
                             <img src="https://image.tmdb.org/t/p/w200/${movie.poster_path}" alt="${movie.title}" class="img-fluid" style="max-width: 40px; margin-right: 10px;">
                             ${movie.title}
                         </a>
@@ -52,6 +52,10 @@ $(document).on('click', '#searchResults .dropdown-item', function (e)
 
     const title = $(this).data('title');
     const posterUrl = $(this).data('poster');
+    const overview = $(this).data('overview');
+    const vote_average = $(this).data('vote');
+    const release_date = $(this).data('release');
+    const poster_path = $(this).data('poster');
 
     // Check if the movie is already in the selectedMovies array to avoid duplicates
     if (!selectedMovies.some(movie => movie.title === title)) 
@@ -61,7 +65,7 @@ $(document).on('click', '#searchResults .dropdown-item', function (e)
 
         // Add the movie poster to the search-results section
         const movieHtml = `
-            <div class="poster d-flex justify-content-center align-items-center bg-black position-relative" data-title="${title}">
+            <div class="poster d-flex justify-content-center align-items-center bg-black position-relative" data-title="${title}" data-overview="${overview}" data-vote="${vote_average}" data-release="${release_date}" data-poster="${poster_path}">
                 <img src="https://image.tmdb.org/t/p/w200/${posterUrl}" alt="${title}" class="img-fluid mx-auto d-block">
                 <!-- Delete button -->
                 <button class="delete-btn position-absolute top-0 end-0 p-1 bg-dark text-white">

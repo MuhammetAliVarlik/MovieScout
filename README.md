@@ -27,6 +27,8 @@
 <a target="_blank" href="https://www.langchain.com/">
     <img src="https://img.shields.io/badge/Langchain-1B1D29?logo=langchain&logoColor=white" />
 </a>
+
+--
 A modern web application that helps you find and explore movies based on your interests. By leveraging the TMDB dataset and semantic search, this app allows you to swipe through movie recommendations and store your favorites locally. Additionally, the app utilizes a custom-built large language model (LLM) for personalized film suggestions.
 
 ---
@@ -34,7 +36,7 @@ A modern web application that helps you find and explore movies based on your in
 ## 🚀 Features
 
 - **Search Movies**: Search for movies using the TMDB dataset through an intuitive search input on the homepage.
-- **Swipe to Like**: A Tinder-like swipe interface to like/dislike movies and store favorites in local storage.
+- **Swipe to Like**: A swipe interface to like/dislike movies and store favorites in local storage.
 - **Semantic Search**: Find similar movies using semantic search for a more personalized recommendation experience.
 - **Personalized Recommendations**: Receive additional movie suggestions via a recommender system built with a custom LLM and retrieval-augmented generation (RAG).
 - **Responsive Design**: Optimized for both desktop and mobile viewing.
@@ -74,7 +76,7 @@ This project utilizes a range of modern web technologies for both the frontend a
   <strong>Flask</strong>: A lightweight Python web framework used to serve the application and manage backend logic.
 </p>
 
-### APIs & Libraries
+### Datasets & Libraries
 
 <p>
   <strong>TMDB Dataset</strong>: Provides access to a vast database of movies, which is used to fetch movie data (e.g., titles, descriptions, images). 
@@ -83,12 +85,6 @@ This project utilizes a range of modern web technologies for both the frontend a
 
 <p>
   <strong>Langchain</strong>: A library used for building advanced language model-powered systems. In this project, it is used to generate personalized movie recommendations with retrieval-augmented generation (RAG).
-</p>
-
-### Storage
-
-<p>
-  <strong>Local Storage</strong>: Used to store the user's liked movies directly in the browser, enabling persistent data between sessions.
 </p>
 
 ---

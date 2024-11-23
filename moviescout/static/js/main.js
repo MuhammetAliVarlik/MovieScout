@@ -59,6 +59,34 @@ function updateLikedMoviesList(likedMovies) {
         `);
     });
 }
+// Function to copy liked movies to clipboard for WhatsApp
+function copyLikedMoviesToWhatsApp(likedMovies) {
+    let message = "Here are my liked movies:\n\n";
+    
+    likedMovies.forEach(function (movie, index) {
+        message += `${index + 1}. ${movie.title} (${movie.release_date})\n`;
+        message += `   Genres: ${movie.genres}\n`;
+        message += `   Rating: ${movie.vote_average} / 10\n`;
+        message += `   Overview: ${movie.overview}\n\n`;
+    });
+
+    // Copy to clipboard
+    navigator.clipboard.writeText(message)
+        .then(() => {
+            alert("Movies copied to clipboard! Paste it in WhatsApp.");
+        })
+        .catch(err => {
+            console.error("Error copying text: ", err);
+            alert("Failed to copy text.");
+        });
+}
+
+// Add click event listener to the button
+$(document).on("click", "#copyToWhatsApp", function () {
+    // Call the function with likedMovies data (make sure you pass the actual data)
+    copyLikedMoviesToWhatsApp(likedMovies);
+});
+
 
 $(document).ready(function () {
     // Load liked movies from localStorage
@@ -67,5 +95,28 @@ $(document).ready(function () {
         console.log("Loaded liked movies from localStorage:", likedMovies);
         updateLikedMoviesCount(likedMovies); // Pass likedMovies to the update function
         updateLikedMoviesList(likedMovies);  // Pass likedMovies to the update function
+    }
+});
+
+document.addEventListener('click', function (e) {
+    const card = e.target.closest('.poster');
+    if (card) {
+        const title = card.dataset.title;
+        const overview = card.dataset.overview;
+        const vote = card.dataset.vote;
+        const release = card.dataset.release;
+        const poster = card.dataset.poster;
+        const genres = card.dataset.genres;
+        // Modal içeriğini doldur
+        document.getElementById('modal-title').textContent = title;
+        document.getElementById('modal-poster').src = `https://image.tmdb.org/t/p/w200/${poster}`;
+        document.getElementById('modal-overview').textContent = overview;
+        document.getElementById('modal-vote').textContent = vote;
+        document.getElementById('modal-release-date').textContent = release;
+        document.getElementById('modal-genres').textContent = genres;
+
+        // Modal'ı göster
+        const movieModal = new bootstrap.Modal(document.getElementById('movieModal'));
+        movieModal.show();
     }
 });

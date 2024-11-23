@@ -28,13 +28,13 @@ function release() {
 
         // Collect movie details from data attributes
         const movieDetails = {
-            title: $card.data("movie-title"),
-            similarity_score: $card.data("movie-similarity"), 
-            release_date: $card.data("movie-release"),
-            genres: $card.data("movie-genres"),
-            overview: $card.data("movie-overview"),
-            poster_path: $card.data("movie-poster"),
-            vote_average: $card.data("movie-vote")
+            title: $card.data("title"),
+            similarity_score: $card.data("similarity"), 
+            release_date: $card.data("release"),
+            genres: $card.data("genres"),
+            overview: $card.data("overview"),
+            poster_path: $card.data("poster"),
+            vote_average: $card.data("vote")
         };
 
         // Check if the movie already exists in the likedMovies array
