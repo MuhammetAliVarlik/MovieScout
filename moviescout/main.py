@@ -1,8 +1,6 @@
 from flask import Flask, render_template, request, jsonify, session,Response
 from flask_caching import Cache
-from func.moviesRecommendationEngine import MovieRecommendationEngine
-from func.moviesRAG import MovieRecommendationRAG
-from config import Config
+from resources import MovieRecommendationEngine,MovieRecommendationRAG,Config
  # Assuming the class is in this file
 
 # Initialize Flask app and cache

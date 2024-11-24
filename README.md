@@ -89,6 +89,21 @@ This project utilizes a range of modern web technologies for both the frontend a
 
 ---
 
+📸 Media
+
+Here are some screenshots to give you a glimpse of the app's interface:
+
+Homepage:
+
+![Alt text](docs/demo/home.png?raw=true "Home")
+![Alt text](docs/demo/movie_details.png?raw=true "Movie Details")
+
+Similar Movies:
+![Alt text](docs/demo/similar_movies.png?raw=true "Similar Movies")
+
+Movies Chat:
+![Alt text](docs/demo/movies_chat.png?raw=true "Movies Chat")
+
 ## 📦 Installation
 
 To run the project locally, follow these steps:
