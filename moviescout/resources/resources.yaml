@@ -1,0 +1,12 @@
+dataset:
+  name: "asaniczka/tmdb-movies-dataset-2023-930k-movies"
+  zip_file_name: "tmdb-movies-dataset-2023-930k-movies.zip"
+  csv_file_name: "TMDB_movie_dataset_v11.csv"
+  processed_file_name: "TMDB.csv"
+  download_path: "data/raw"
+  processed_path: "data/processed"
+
+model:
+  repo_id: "bartowski/Llama-3.2-1B-Instruct-GGUF"
+  file_name: "Llama-3.2-1B-Instruct-Q6_K_L.gguf"
+  output_dir: "models"

@@ -1,6 +1,9 @@
 from flask import Flask
-from resources import Config
+from resources import Config,HuggingFaceModelDownloader,TMDBDatasetProcessor
 from blueprints import home_bp,similar_movies_bp,movie_chat_bp
+
+processor = TMDBDatasetProcessor().run_pipeline()
+downloader = HuggingFaceModelDownloader().download_model()
 
 app = Flask(__name__)
 app.config.from_object(Config)
