@@ -98,12 +98,15 @@ Here are some screenshots to give you a glimpse of the app's interface:
 ![Alt text](docs/demo/home.png?raw=true "Home")
 
 ### Movie Details:
+
 ![Alt text](docs/demo/movie_details.png?raw=true "Movie Details")
 
 ### Similar Movies:
+
 ![Alt text](docs/demo/similar_movies.png?raw=true "Similar Movies")
 
 ### Movies Chat:
+
 ![Alt text](docs/demo/movies_chat.png?raw=true "Movies Chat")
 
 ## 📦 Installation
@@ -115,3 +118,23 @@ To run the project locally, follow these steps:
    git clone https://github.com/username/moviescout.git
    cd moviescout
    ```
+2. **Create and activate the Conda environment**:
+   Use the environment.yml file to set up the required dependencies.
+
+   ```bash
+   conda env create -f environment.yml
+   conda activate moviescout
+   ```
+
+3. **Run the project**:
+   After activating the environment, you can run the project using the following command:
+   ```bash
+   cd moviescout
+   python run.py
+   ```
+
+## 🤝 Contributing
+
+Contributions are welcome! Feel free to open issues or submit pull requests to improve this project.
+
+Enjoy exploring movies with MovieScout! 🍿
