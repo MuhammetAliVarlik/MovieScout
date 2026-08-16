@@ -35,7 +35,7 @@ A web application that helps you find and explore movies based on your interests
 - **Search Movies**: Search for movies using the built-in TMDB dataset through an intuitive search input on the homepage.
 - **Swipe to Discover**: A swipe interface to like/dislike movies and build up your favorites.
 - **Semantic Search & Recommendations**: Find similar movies using a ChromaDB-backed embedding search.
-- **Import your Letterboxd ratings**: Upload a Letterboxd export `.zip` (or a bare `ratings.csv`) at `/api/import` — MovieScout parses your ratings, enriches them against the local TMDB dataset, and excludes films you've already watched from future recommendations.
+- **Import your Letterboxd ratings**: Click "Import Letterboxd" in the navbar and upload a Letterboxd export `.zip` (or a bare `ratings.csv`) — MovieScout parses your ratings, enriches them against the local TMDB dataset, and excludes films you've already watched from future recommendations.
 - **LLM Chat**: Ask a local LLM (via [Ollama](https://ollama.com)) for personalized recommendations, aware of your imported taste profile.
 - **Responsive Design**: Optimized for both desktop and mobile viewing.
 
@@ -106,6 +106,8 @@ ollama pull llama3.2:3b
 ```
 
 Ollama typically starts its server automatically; if not, run `ollama serve`. Without it, `/chat` still loads and shows a clear inline message explaining what to do instead of failing.
+
+**Running the app under WSL with Ollama installed on Windows?** `OLLAMA_HOST=http://localhost:11434` in `.env` won't reach it — WSL2's `localhost` doesn't forward to the Windows host in the outbound direction by default. Find the Windows host IP from WSL with `cat /etc/resolv.conf | grep nameserver` and set `OLLAMA_HOST` to `http://<that-ip>:11434`, or install/run Ollama directly inside WSL instead.
 
 ## 🔒 Security notes
 
