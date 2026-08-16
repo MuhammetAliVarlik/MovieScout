@@ -1,6 +1,3 @@
-import os
-import tempfile
-
 from flask import Blueprint, request, jsonify, session
 
 from app.services import LetterboxdImporter

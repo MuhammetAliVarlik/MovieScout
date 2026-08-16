@@ -28,8 +28,6 @@ class LetterboxdImporter:
     profile = importer.from_zip_bytes(file.read())   # raw bytes of export .zip
     """
 
-    LETTERBOXD_BASE = "https://letterboxd.com/film/"
-
     def __init__(self) -> None:
         dataset_path = current_app.config.get("TMDB_DATASET_PATH", "")
         self._tmdb_df: pd.DataFrame | None = None

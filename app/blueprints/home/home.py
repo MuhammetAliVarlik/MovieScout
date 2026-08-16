@@ -39,7 +39,7 @@ def find_similar_movies():
     profile_data = session.get("taste_profile")
     exclude: set[str] = set()
     if profile_data:
-        exclude = set(profile_data.get("watched_titles", []))
+        exclude = {f["title"].lower() for f in profile_data.get("films", []) if f.get("title")}
 
     recommendations = engine.get_recommendations(movie_list, exclude_titles=exclude, limit=limit)
     session["recommendations"] = [r.model_dump() for r in recommendations]
