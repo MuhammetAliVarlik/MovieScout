@@ -1,50 +1,37 @@
-// Function to save the likedMovies to localStorage
+// main.js — shared across every page: liked-movies list, movie-details modal,
+// and the Letterboxd import modal. Vanilla JS: no jQuery required.
+
+let likedMovies = [];
+
+// ─── Liked movies (localStorage) ───────────────────────────────────────────────
+
 function saveLikedMovies() {
-    console.log(likedMovies);
     localStorage.setItem("likedMovies", JSON.stringify(likedMovies));
 }
 
-// Function to load the likedMovies from localStorage
 function loadLikedMovies() {
-    const likedMoviesData = localStorage.getItem("likedMovies");
-
-    if (likedMoviesData) {
-        try {
-            // JSON verisini çözümle
-            const parsedData = JSON.parse(likedMoviesData);
-
-            // Eğer verinin türü bir dizi ise, döndür
-            if (Array.isArray(parsedData)) {
-                return parsedData;
-            } else {
-                console.warn("Beklenen dizi formatında veri gelmedi:", parsedData);
-                return [];  // Hatalı veri formatı durumunda boş bir dizi döndür
-            }
-        } catch (error) {
-            console.error("Veri çözümleme hatası:", error);
-            return [];  // JSON çözümleme hatasında boş dizi döndür
-        }
+    const raw = localStorage.getItem("likedMovies");
+    if (!raw) return [];
+    try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+        console.error("Failed to parse likedMovies from localStorage:", error);
+        return [];
     }
-
-    return [];  // Eğer hiç veri yoksa boş bir dizi döndür
 }
 
-
-
-// Function to update the likedMovies count in the navbar
-function updateLikedMoviesCount(likedMovies) {
-    $("#likedMoviesCount").text(likedMovies.length);
-    console.log(likedMovies.length);
+function updateLikedMoviesCount(movies) {
+    const el = document.getElementById("likedMoviesCount");
+    if (el) el.textContent = movies.length;
 }
 
-// Function to render the liked movies list in the modal
-function updateLikedMoviesList(likedMovies) {
-    const $likedMoviesList = $("#likedMoviesList");
-    $likedMoviesList.empty(); // Clear the list
-
-    // Loop through each liked movie and append it to the list
-    likedMovies.forEach(function(movie) {
-        $likedMoviesList.append(`
+function updateLikedMoviesList(movies) {
+    const list = document.getElementById("likedMoviesList");
+    if (!list) return;
+    list.innerHTML = "";
+    movies.forEach(movie => {
+        list.insertAdjacentHTML("beforeend", `
             <div class="liked-movie-card bg-dark text-white p-3 rounded mb-3">
                 <div class="d-flex align-items-center">
                     <img src="https://image.tmdb.org/t/p/w200/${movie.poster_path}" class="img-fluid rounded me-3" style="width: 100px;">
@@ -59,64 +46,95 @@ function updateLikedMoviesList(likedMovies) {
         `);
     });
 }
-// Function to copy liked movies to clipboard for WhatsApp
-function copyLikedMoviesToWhatsApp(likedMovies) {
+
+function copyLikedMoviesToWhatsApp(movies) {
     let message = "Here are my liked movies:\n\n";
-    
-    likedMovies.forEach(function (movie, index) {
+    movies.forEach((movie, index) => {
         message += `${index + 1}. ${movie.title} (${movie.release_date})\n`;
         message += `   Genres: ${movie.genres}\n`;
         message += `   Rating: ${movie.vote_average} / 10\n`;
         message += `   Overview: ${movie.overview}\n\n`;
     });
-
-    // Copy to clipboard
     navigator.clipboard.writeText(message)
-        .then(() => {
-            alert("Movies copied to clipboard! Paste it in WhatsApp.");
-        })
+        .then(() => alert("Movies copied to clipboard! Paste it in WhatsApp."))
         .catch(err => {
-            console.error("Error copying text: ", err);
+            console.error("Error copying text:", err);
             alert("Failed to copy text.");
         });
 }
 
-// Add click event listener to the button
-$(document).on("click", "#copyToWhatsApp", function () {
-    // Call the function with likedMovies data (make sure you pass the actual data)
-    copyLikedMoviesToWhatsApp(likedMovies);
-});
-
-
-$(document).ready(function () {
-    // Load liked movies from localStorage
-    likedMovies = loadLikedMovies();  // Don't redeclare `likedMovies` here
-    if (likedMovies && likedMovies.length > 0) {
-        console.log("Loaded liked movies from localStorage:", likedMovies);
-        updateLikedMoviesCount(likedMovies); // Pass likedMovies to the update function
-        updateLikedMoviesList(likedMovies);  // Pass likedMovies to the update function
+document.addEventListener("click", function (e) {
+    if (e.target.closest("#copyToWhatsApp")) {
+        copyLikedMoviesToWhatsApp(likedMovies);
     }
 });
 
-document.addEventListener('click', function (e) {
-    const card = e.target.closest('.poster');
-    if (card) {
-        const title = card.dataset.title;
-        const overview = card.dataset.overview;
-        const vote = card.dataset.vote;
-        const release = card.dataset.release;
-        const poster = card.dataset.poster;
-        const genres = card.dataset.genres;
-        // Modal içeriğini doldur
-        document.getElementById('modal-title').textContent = title;
-        document.getElementById('modal-poster').src = `https://image.tmdb.org/t/p/w200/${poster}`;
-        document.getElementById('modal-overview').textContent = overview;
-        document.getElementById('modal-vote').textContent = vote;
-        document.getElementById('modal-release-date').textContent = release;
-        document.getElementById('modal-genres').textContent = genres;
+document.addEventListener("DOMContentLoaded", function () {
+    likedMovies = loadLikedMovies();
+    if (likedMovies.length > 0) {
+        updateLikedMoviesCount(likedMovies);
+        updateLikedMoviesList(likedMovies);
+    }
+});
 
-        // Modal'ı göster
-        const movieModal = new bootstrap.Modal(document.getElementById('movieModal'));
-        movieModal.show();
+// ─── Movie details modal ────────────────────────────────────────────────────────
+
+document.addEventListener("click", function (e) {
+    const card = e.target.closest(".poster");
+    if (!card) return;
+    const d = card.dataset;
+
+    document.getElementById("modal-title").textContent = d.title;
+    document.getElementById("modal-poster").src = `https://image.tmdb.org/t/p/w200/${d.poster}`;
+    document.getElementById("modal-overview").textContent = d.overview;
+    document.getElementById("modal-vote").textContent = d.vote;
+    document.getElementById("modal-release-date").textContent = d.release;
+    document.getElementById("modal-genres").textContent = d.genres;
+
+    new bootstrap.Modal(document.getElementById("movieModal")).show();
+});
+
+// ─── Letterboxd import ───────────────────────────────────────────────────────────
+
+document.addEventListener("submit", async function (e) {
+    const form = e.target.closest("#importLetterboxdForm");
+    if (!form) return;
+    e.preventDefault();
+
+    const fileInput = document.getElementById("letterboxdFile");
+    const resultEl = document.getElementById("importResult");
+    const submitBtn = form.querySelector("button[type=submit]");
+
+    if (!fileInput.files.length) {
+        resultEl.innerHTML = `<div class="text-danger">Choose a .zip or .csv file first.</div>`;
+        return;
+    }
+
+    const body = new FormData();
+    body.append("file", fileInput.files[0]);
+
+    submitBtn.disabled = true;
+    resultEl.innerHTML = `<div class="text-muted">Importing…</div>`;
+
+    try {
+        const res = await fetch("/api/import", { method: "POST", body });
+        const data = await res.json();
+        if (!res.ok) {
+            resultEl.innerHTML = `<div class="text-danger">${data.error || "Import failed."}</div>`;
+            return;
+        }
+        const genres = (data.top_genres || []).join(", ") || "—";
+        const films = (data.top_films || []).map(f => `${f.title} (${f.rating}★)`).join(", ") || "—";
+        resultEl.innerHTML = `
+            <div class="text-success mb-2">Imported ${data.total_films} film(s).</div>
+            <div class="small text-muted">Top genres: ${genres}</div>
+            <div class="small text-muted">Top rated: ${films}</div>
+            <div class="small text-white mt-2">Your recommendations will now exclude these films.</div>
+        `;
+    } catch (err) {
+        console.error("Letterboxd import failed:", err);
+        resultEl.innerHTML = `<div class="text-danger">Something went wrong. Please try again.</div>`;
+    } finally {
+        submitBtn.disabled = false;
     }
 });

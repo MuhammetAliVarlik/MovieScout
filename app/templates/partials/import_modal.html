@@ -1,0 +1,21 @@
+<div class="modal fade" id="importLetterboxdModal" tabindex="-1" aria-labelledby="importLetterboxdModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title" id="importLetterboxdModalLabel">Import your Letterboxd ratings</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-white">
+                <p class="small text-muted">
+                    Export your ratings from Letterboxd (Settings &rarr; Import &amp; Export &rarr; Export)
+                    and upload the <code>.zip</code> here, or just the <code>ratings.csv</code> file directly.
+                </p>
+                <form id="importLetterboxdForm">
+                    <input type="file" class="form-control" id="letterboxdFile" accept=".zip,.csv" required>
+                    <button type="submit" class="btn btn-danger mt-3">Import</button>
+                </form>
+                <div id="importResult" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
