@@ -2,7 +2,8 @@ from flask import Blueprint, render_template, request, jsonify, session, current
 from app.services import MovieRecommendationEngine, MovieSearchService
 
 home_bp = Blueprint(
-    "home_bp", __name__, template_folder="templates", static_folder="static"
+    "home_bp", __name__, template_folder="templates",
+    static_folder="static", static_url_path="/home/static",
 )
 
 

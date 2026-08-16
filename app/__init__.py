@@ -1,4 +1,8 @@
+from pathlib import Path
+
+from cachelib.file import FileSystemCache
 from flask import Flask
+from flask_session import Session
 from .config import Config
 from .extensions import cache
 
@@ -20,6 +24,16 @@ def create_app(config: Config | None = None) -> Flask:
     app.config["RAG_CONTEXT_FILMS"] = cfg.RAG_CONTEXT_FILMS
     app.config["CACHE_TYPE"] = "SimpleCache"
     app.config["CACHE_DEFAULT_TIMEOUT"] = 600
+
+    # Recommendations/taste-profile payloads are too large for a client-side
+    # cookie session (real browsers cap cookies at ~4KB; Flask's default
+    # session silently gets dropped past that). Store sessions server-side
+    # instead — the cookie only carries a small session id.
+    session_dir = str(Path(app.config["CHROMA_PERSIST_PATH"]).parent / "flask_session")
+    app.config["SESSION_TYPE"] = "cachelib"
+    app.config["SESSION_CACHELIB"] = FileSystemCache(cache_dir=session_dir, threshold=500)
+    app.config["SESSION_PERMANENT"] = False
+    Session(app)
 
     cache.init_app(app)
 

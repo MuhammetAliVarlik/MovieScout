@@ -6,7 +6,8 @@ from app.services import FilmRAG, MovieSearchService, LLMUnavailableError
 from app.models import TasteProfile
 
 chat_bp = Blueprint(
-    "chat_bp", __name__, template_folder="templates", static_folder="static"
+    "chat_bp", __name__, template_folder="templates",
+    static_folder="static", static_url_path="/chat/static",
 )
 
 
