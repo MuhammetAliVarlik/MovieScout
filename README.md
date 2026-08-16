@@ -107,8 +107,6 @@ ollama pull llama3.2:3b
 
 Ollama typically starts its server automatically; if not, run `ollama serve`. Without it, `/chat` still loads and shows a clear inline message explaining what to do instead of failing.
 
-**Running the app under WSL with Ollama installed on Windows?** `OLLAMA_HOST=http://localhost:11434` in `.env` won't reach it — WSL2's `localhost` doesn't forward to the Windows host in the outbound direction by default. Find the Windows host IP from WSL with `cat /etc/resolv.conf | grep nameserver` and set `OLLAMA_HOST` to `http://<that-ip>:11434`, or install/run Ollama directly inside WSL instead.
-
 ## 🔒 Security notes
 
 This is a portfolio/demo project. There are no user accounts, and the only state-changing endpoints (search, recommendations, Letterboxd import) are same-origin form/file submissions with no destructive cross-site action, so CSRF/CORS middleware was intentionally left out to keep the app simple. Treat it accordingly if you extend it toward a multi-user deployment.
