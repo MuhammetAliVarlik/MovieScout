@@ -9,11 +9,12 @@ def create_app(config: Config | None = None) -> Flask:
     cfg = config or Config()
 
     app.config["SECRET_KEY"] = cfg.SECRET_KEY
+    app.config["FLASK_ENV"] = cfg.FLASK_ENV
     app.config["TMDB_API_KEY"] = cfg.TMDB_API_KEY
     app.config["TMDB_DATASET_PATH"] = str(cfg.TMDB_DATASET_PATH)
     app.config["CHROMA_PERSIST_PATH"] = str(cfg.CHROMA_PERSIST_PATH)
-    app.config["LOCAL_MODEL_PATH"] = str(cfg.LOCAL_MODEL_PATH)
-    app.config["LOCAL_MODEL_CONTEXT_LENGTH"] = cfg.LOCAL_MODEL_CONTEXT_LENGTH
+    app.config["OLLAMA_HOST"] = cfg.OLLAMA_HOST
+    app.config["OLLAMA_MODEL"] = cfg.OLLAMA_MODEL
     app.config["LOCAL_MODEL_MAX_TOKENS"] = cfg.LOCAL_MODEL_MAX_TOKENS
     app.config["MAX_RECOMMENDATIONS"] = cfg.MAX_RECOMMENDATIONS
     app.config["RAG_CONTEXT_FILMS"] = cfg.RAG_CONTEXT_FILMS

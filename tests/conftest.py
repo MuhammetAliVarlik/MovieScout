@@ -9,7 +9,6 @@ def app():
         SECRET_KEY="test-secret",
         TMDB_DATASET_PATH="data/processed/TMDB.csv",
         CHROMA_PERSIST_PATH="data/chroma",
-        LOCAL_MODEL_PATH="models/test.gguf",
     )
     application = create_app(cfg)
     application.config["TESTING"] = True

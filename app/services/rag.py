@@ -1,25 +1,30 @@
 from __future__ import annotations
-from pathlib import Path
+import json
 from typing import Generator
 
+import requests
 from flask import current_app
-from llama_cpp import Llama
 
 from app.models import Movie, TasteProfile
 
 
+class LLMUnavailableError(Exception):
+    """Raised when Ollama isn't running or the configured model isn't pulled."""
+
+
 class FilmRAG:
     """
-    Local LLM film recommendation chat, backed by llama_cpp_python.
+    Local LLM film recommendation chat, backed by Ollama.
 
-    Improvements over the original MovieRecommendationRAG:
-    - Model path is read from app config (LOCAL_MODEL_PATH), not hardcoded.
-    - Streaming: chat() yields tokens one-by-one via llama_cpp stream=True.
+    - Talks to a local Ollama server (OLLAMA_HOST) running OLLAMA_MODEL
+      (default: llama3.2:3b) — no manual model file download required,
+      just `ollama pull llama3.2:3b`.
+    - Streaming: chat() yields tokens one-by-one from Ollama's /api/chat.
     - Conversation memory: last 2 turns are included in every prompt.
     - Taste-aware: if a TasteProfile is supplied, top-rated films are injected
       into the system prompt so the LLM knows the user's preferences.
-    - Clear FileNotFoundError with download instructions when model is missing.
-    - Stop tokens keep the model from rambling past the answer.
+    - Raises LLMUnavailableError with setup instructions when Ollama can't
+      be reached or the model isn't pulled.
     """
 
     _STOP_TOKENS = ["[INST]", "</s>", "User:", "Human:"]
@@ -27,33 +32,51 @@ class FilmRAG:
     def __init__(self, taste_profile: TasteProfile | None = None):
         self.taste_profile = taste_profile
         self._history: list[tuple[str, str]] = []  # [(user, assistant), ...]
-        self._llm: Llama | None = None
 
-    # ── LLM lazy init ─────────────────────────────────────────────────────────
+    # ── Ollama call ────────────────────────────────────────────────────────────
 
-    def _get_llm(self) -> Llama:
-        if self._llm is not None:
-            return self._llm
+    @staticmethod
+    def _unavailable(detail: str) -> LLMUnavailableError:
+        return LLMUnavailableError(
+            f"Local LLM not available: {detail}\n"
+            "Install Ollama from https://ollama.com, then run:\n"
+            "  ollama pull llama3.2:3b\n"
+            "Make sure `ollama serve` is running before chatting."
+        )
 
-        model_path = str(current_app.config["LOCAL_MODEL_PATH"])
-        if not Path(model_path).exists():
-            raise FileNotFoundError(
-                f"Local LLM model not found at: {model_path}\n"
-                "Download a free GGUF model and set LOCAL_MODEL_PATH in .env.\n"
-                "Example (Mistral 7B, ~4 GB):\n"
-                "  python -c \"from huggingface_hub import hf_hub_download; "
-                "hf_hub_download(repo_id='TheBloke/Mistral-7B-Instruct-v0.2-GGUF', "
-                "filename='mistral-7b-instruct-v0.2.Q4_K_M.gguf', local_dir='./models')\""
+    def _stream_ollama(self, prompt: str, max_tokens: int) -> Generator[str, None, None]:
+        host = current_app.config.get("OLLAMA_HOST", "http://localhost:11434")
+        model = current_app.config.get("OLLAMA_MODEL", "llama3.2:3b")
+
+        try:
+            resp = requests.post(
+                f"{host.rstrip('/')}/api/chat",
+                json={
+                    "model": model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "stream": True,
+                    "options": {"num_predict": max_tokens, "stop": self._STOP_TOKENS},
+                },
+                stream=True,
+                timeout=60,
+            )
+        except requests.exceptions.ConnectionError:
+            raise self._unavailable(f"couldn't connect to Ollama at {host}")
+
+        if resp.status_code != 200:
+            raise self._unavailable(
+                f"Ollama returned {resp.status_code} for model '{model}' — is it pulled?"
             )
 
-        self._llm = Llama(
-            model_path=model_path,
-            n_ctx=current_app.config.get("LOCAL_MODEL_CONTEXT_LENGTH", 4096),
-            n_threads=4,
-            n_batch=512,
-            verbose=False,
-        )
-        return self._llm
+        for line in resp.iter_lines():
+            if not line:
+                continue
+            chunk = json.loads(line)
+            token = chunk.get("message", {}).get("content", "")
+            if token:
+                yield token
+            if chunk.get("done"):
+                break
 
     # ── Prompt building ────────────────────────────────────────────────────────
 
@@ -129,18 +152,11 @@ class FilmRAG:
         """Yield response tokens one-by-one (SSE-friendly)."""
         context_films = self._retrieve_context(message)
         prompt = self._build_prompt(message, context_films)
-        llm = self._get_llm()
 
         max_tokens = current_app.config.get("LOCAL_MODEL_MAX_TOKENS", 512)
         full_response = ""
 
-        for chunk in llm(
-            prompt,
-            max_tokens=max_tokens,
-            stop=self._STOP_TOKENS,
-            stream=True,
-        ):
-            token = chunk["choices"][0]["text"]
+        for token in self._stream_ollama(prompt, max_tokens):
             full_response += token
             yield token
 

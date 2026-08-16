@@ -17,8 +17,8 @@ class Config(BaseSettings):
 
     CHROMA_PERSIST_PATH: Path = Path("./data/chroma")
 
-    LOCAL_MODEL_PATH: Path = Path("./models/mistral-7b-instruct-v0.2.Q4_K_M.gguf")
-    LOCAL_MODEL_CONTEXT_LENGTH: int = 4096
+    OLLAMA_HOST: str = "http://localhost:11434"
+    OLLAMA_MODEL: str = "llama3.2:3b"
     LOCAL_MODEL_MAX_TOKENS: int = 512
 
     MAX_RECOMMENDATIONS: int = 20

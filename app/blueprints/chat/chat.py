@@ -2,7 +2,7 @@ from flask import (
     Blueprint, render_template, request,
     Response, session, jsonify, current_app,
 )
-from app.services import FilmRAG, MovieSearchService
+from app.services import FilmRAG, MovieSearchService, LLMUnavailableError
 from app.models import TasteProfile
 
 chat_bp = Blueprint(
@@ -40,10 +40,14 @@ def chat_stream():
     rag = _get_rag()
 
     def generate():
-        for token in rag.chat(message):
-            # Escape newlines so each token is a valid SSE data line
-            yield f"data: {token.replace(chr(10), ' ')}\n\n"
-        yield "data: [DONE]\n\n"
+        try:
+            for token in rag.chat(message):
+                # Escape newlines so each token is a valid SSE data line
+                yield f"data: {token.replace(chr(10), ' ')}\n\n"
+            yield "data: [DONE]\n\n"
+        except LLMUnavailableError as exc:
+            yield f"data: [ERROR] {str(exc).splitlines()[0]}\n\n"
+            yield "data: [DONE]\n\n"
 
     return Response(generate(), mimetype="text/event-stream")
 
