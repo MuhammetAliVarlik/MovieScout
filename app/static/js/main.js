@@ -75,7 +75,26 @@ document.addEventListener("DOMContentLoaded", function () {
         updateLikedMoviesCount(likedMovies);
         updateLikedMoviesList(likedMovies);
     }
+    refreshTasteProfilePill();
 });
+
+// ─── Taste profile pill (navbar) ────────────────────────────────────────────────
+
+async function refreshTasteProfilePill() {
+    const pill = document.getElementById("tasteProfilePill");
+    if (!pill) return;
+    try {
+        const res = await fetch("/api/profile");
+        const data = await res.json();
+        if (data.total_films > 0) {
+            pill.textContent = `🎬 ${data.total_films} film${data.total_films === 1 ? "" : "s"} imported`;
+            pill.classList.add("has-profile");
+            pill.style.display = "";
+        }
+    } catch (err) {
+        console.error("Failed to load taste profile:", err);
+    }
+}
 
 // ─── Movie details modal ────────────────────────────────────────────────────────
 
@@ -131,6 +150,7 @@ document.addEventListener("submit", async function (e) {
             <div class="small text-muted">Top rated: ${films}</div>
             <div class="small text-white mt-2">Your recommendations will now exclude these films.</div>
         `;
+        refreshTasteProfilePill();
     } catch (err) {
         console.error("Letterboxd import failed:", err);
         resultEl.innerHTML = `<div class="text-danger">Something went wrong. Please try again.</div>`;

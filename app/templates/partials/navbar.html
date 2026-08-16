@@ -1,7 +1,7 @@
 <div class="background-image"></div>
 <nav class="navbar navbar-expand-lg bg-black" id="navbar">
     <div class="container-fluid">
-        <a class="navbar-brand text-white fw-bold" href="/">CineMatch</a>
+        <a class="navbar-brand" href="/">Cine<span>Match</span></a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
             data-bs-target="#navbarNav" aria-controls="navbarNav"
             aria-expanded="false" aria-label="Toggle navigation">
@@ -19,14 +19,14 @@
                     <a class="nav-link" href="/chat">Chat</a>
                 </li>
             </ul>
-            <div class="nav-item">
-                <a class="nav-link text-white" href="#" id="importLetterboxd"
+            <div class="d-flex align-items-center gap-2">
+                <a class="nav-pill" href="#" id="importLetterboxd"
                     data-bs-toggle="modal" data-bs-target="#importLetterboxdModal">
                     Import Letterboxd
                 </a>
-            </div>
-            <div class="nav-item">
-                <a class="nav-link text-white" href="#" id="likedMovies"
+                <a class="nav-pill" href="#" id="tasteProfilePill" style="display: none;"
+                    data-bs-toggle="modal" data-bs-target="#importLetterboxdModal"></a>
+                <a class="nav-pill" href="#" id="likedMovies"
                     data-bs-toggle="modal" data-bs-target="#likedMoviesModal">
                     ❤️ <span id="likedMoviesCount">0</span>
                 </a>
