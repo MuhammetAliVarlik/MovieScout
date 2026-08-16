@@ -148,9 +148,10 @@ document.addEventListener("submit", async function (e) {
             <div class="text-success mb-2">Imported ${data.total_films} film(s).</div>
             <div class="small text-muted">Top genres: ${genres}</div>
             <div class="small text-muted">Top rated: ${films}</div>
-            <div class="small text-white mt-2">Your recommendations will now exclude these films.</div>
+            <div class="small text-white mt-2">Building your recommendations…</div>
         `;
         refreshTasteProfilePill();
+        await seedRecommendationsFromProfile(data.top_films || [], resultEl);
     } catch (err) {
         console.error("Letterboxd import failed:", err);
         resultEl.innerHTML = `<div class="text-danger">Something went wrong. Please try again.</div>`;
@@ -158,3 +159,33 @@ document.addEventListener("submit", async function (e) {
         submitBtn.disabled = false;
     }
 });
+
+async function seedRecommendationsFromProfile(topFilms, resultEl) {
+    const titles = topFilms.map(f => f.title).filter(Boolean);
+    if (!titles.length) {
+        resultEl.insertAdjacentHTML("beforeend", `
+            <div class="small text-muted mt-2">None of your imported films matched closely enough to seed recommendations automatically — try searching for one you love on the Home page instead.</div>
+        `);
+        return;
+    }
+
+    const seedForm = new FormData();
+    titles.forEach(t => seedForm.append("movies[]", t));
+
+    try {
+        const res = await fetch("/find_similar_movies", { method: "POST", body: seedForm });
+        const data = await res.json();
+        if (res.ok && data.total > 0) {
+            window.location.href = "/discover";
+            return;
+        }
+        resultEl.insertAdjacentHTML("beforeend", `
+            <div class="small text-muted mt-2">We couldn't find enough similar films locally to build a feed yet — try searching for a film you love on the Home page instead.</div>
+        `);
+    } catch (err) {
+        console.error("Auto-recommendation from taste profile failed:", err);
+        resultEl.insertAdjacentHTML("beforeend", `
+            <div class="small text-danger mt-2">Couldn't build recommendations automatically. Try searching for a film on the Home page instead.</div>
+        `);
+    }
+}
