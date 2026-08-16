@@ -75,6 +75,29 @@ class MovieRecommendationEngine:
 
     # ── Public API ────────────────────────────────────────────────────────────
 
+    def lookup_by_chroma_id(self, chroma_id: str) -> pd.Series | None:
+        """
+        Resolve a ChromaDB document id back to its row in self.df.
+
+        _populate_chroma() ids each document with row["id"] when the dataset
+        has a real "id" column, falling back to the DataFrame's row index
+        otherwise (the shipped TMDB.csv has no "id" column, so ids are the
+        row index). Mirror that same fallback here so lookups always match.
+        """
+        assert self.df is not None
+        if "id" in self.df.columns:
+            matches = self.df[self.df["id"].astype(str) == chroma_id]
+            if not matches.empty:
+                return matches.iloc[0]
+            return None
+        try:
+            row_idx = int(chroma_id)
+        except ValueError:
+            return None
+        if row_idx not in self.df.index:
+            return None
+        return self.df.loc[row_idx]
+
     def get_recommendations(
         self,
         movie_titles: list[str],
@@ -114,10 +137,9 @@ class MovieRecommendationEngine:
         movies: list[Movie] = []
 
         for chroma_id in returned_ids:
-            row = self.df[self.df["id"].astype(str) == chroma_id]
-            if row.empty:
+            r = self.lookup_by_chroma_id(chroma_id)
+            if r is None:
                 continue
-            r = row.iloc[0]
             title = str(r.get("title", ""))
             if title.lower() in excluded or title.lower() in seen:
                 continue

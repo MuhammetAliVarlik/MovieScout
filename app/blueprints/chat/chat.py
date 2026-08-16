@@ -38,16 +38,21 @@ def chat_stream():
         return jsonify({"error": "Empty message"}), 400
 
     rag = _get_rag()
+    app_obj = current_app._get_current_object()
 
     def generate():
-        try:
-            for token in rag.chat(message):
-                # Escape newlines so each token is a valid SSE data line
-                yield f"data: {token.replace(chr(10), ' ')}\n\n"
-            yield "data: [DONE]\n\n"
-        except LLMUnavailableError as exc:
-            yield f"data: [ERROR] {str(exc).splitlines()[0]}\n\n"
-            yield "data: [DONE]\n\n"
+        # Runs lazily, after the request's app context has already been torn
+        # down — re-enter it explicitly so current_app lookups inside
+        # rag.chat() (config, the recommendation engine) still work.
+        with app_obj.app_context():
+            try:
+                for token in rag.chat(message):
+                    # Escape newlines so each token is a valid SSE data line
+                    yield f"data: {token.replace(chr(10), ' ')}\n\n"
+                yield "data: [DONE]\n\n"
+            except LLMUnavailableError as exc:
+                yield f"data: [ERROR] {str(exc).splitlines()[0]}\n\n"
+                yield "data: [DONE]\n\n"
 
     return Response(generate(), mimetype="text/event-stream")
 

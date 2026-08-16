@@ -131,9 +131,8 @@ class FilmRAG:
             films: list[Movie] = []
             for chroma_id in results["ids"][0]:
                 import pandas as pd
-                row = engine.df[engine.df["id"].astype(str) == chroma_id]
-                if not row.empty:
-                    r = row.iloc[0]
+                r = engine.lookup_by_chroma_id(chroma_id)
+                if r is not None:
                     films.append(
                         Movie(
                             tmdb_id=int(r["id"]) if pd.notna(r.get("id")) else None,
