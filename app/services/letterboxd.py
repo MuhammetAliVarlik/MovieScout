@@ -1,6 +1,7 @@
 from __future__ import annotations
 import io
 import zipfile
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 from collections import Counter
 from pathlib import Path
@@ -10,6 +11,8 @@ import requests
 from flask import current_app
 
 from app.models import RatedMovie, TasteProfile
+
+_TMDB_LOOKUP_WORKERS = 8
 
 
 class LetterboxdImporter:
@@ -31,6 +34,7 @@ class LetterboxdImporter:
     def __init__(self) -> None:
         dataset_path = current_app.config.get("TMDB_DATASET_PATH", "")
         self._tmdb_df: pd.DataFrame | None = None
+        self._by_title: dict[str, list[int]] = {}
         if dataset_path and Path(dataset_path).exists():
             self._tmdb_df = pd.read_csv(dataset_path)
             self._tmdb_df["title_lower"] = self._tmdb_df["title"].str.lower().str.strip()
@@ -40,6 +44,10 @@ class LetterboxdImporter:
                 .str[:4]
                 .apply(lambda x: int(x) if x.isdigit() else None)
             )
+            # Index title -> row positions once, so per-film lookups are O(1)
+            # instead of scanning the whole dataset for every imported film.
+            for pos, t in enumerate(self._tmdb_df["title_lower"]):
+                self._by_title.setdefault(t, []).append(pos)
 
     # ── Public entry-points ────────────────────────────────────────────────────
 
@@ -76,7 +84,13 @@ class LetterboxdImporter:
         if missing:
             raise ValueError(f"ratings.csv is missing columns: {missing}")
 
-        films: list[RatedMovie] = []
+        # Pass 1: parse each row and try the (fast, O(1)) local lookup. Rows that
+        # miss locally are queued for the TMDB API instead of being looked up
+        # one at a time — the film-count-sized DataFrame scan and sequential
+        # network calls this replaces made a real Letterboxd export (hundreds
+        # of films) take tens of seconds to minutes.
+        rows: list[dict] = []
+        pending_lookup: list[int] = []  # indices into `rows` needing the TMDB API
         for _, row in df.iterrows():
             title = str(row["Title"]).strip()
             try:
@@ -93,41 +107,51 @@ class LetterboxdImporter:
                 except ValueError:
                     pass
 
-            enriched = self._enrich(title, year)
-            films.append(
-                RatedMovie(
-                    **enriched,
-                    user_rating=rating,
-                    watched_date=watched,
-                )
+            enriched = self._lookup_local(title, year)
+            entry = {"title": title, "year": year, "rating": rating, "watched": watched, "enriched": enriched}
+            if enriched is None:
+                pending_lookup.append(len(rows))
+            rows.append(entry)
+
+        # Pass 2: resolve local misses via the live TMDB API, in parallel — only
+        # if a key is configured; otherwise each just falls back to bare title.
+        if pending_lookup and current_app.config.get("TMDB_API_KEY"):
+            app_obj = current_app._get_current_object()
+
+            def resolve(i: int):
+                with app_obj.app_context():
+                    entry = rows[i]
+                    return i, self._lookup_tmdb_api(entry["title"], entry["year"])
+
+            with ThreadPoolExecutor(max_workers=_TMDB_LOOKUP_WORKERS) as pool:
+                for i, live in pool.map(resolve, pending_lookup):
+                    if live:
+                        rows[i]["enriched"] = live
+
+        films = [
+            RatedMovie(
+                **(entry["enriched"] or {"title": entry["title"]}),
+                user_rating=entry["rating"],
+                watched_date=entry["watched"],
             )
+            for entry in rows
+        ]
 
         return TasteProfile(films=films)
 
     # ── Enrichment ─────────────────────────────────────────────────────────────
 
-    def _enrich(self, title: str, year: int | None) -> dict:
-        """Return a dict of Movie fields. Tries local dataset first, then live API."""
-        local = self._lookup_local(title, year)
-        if local:
-            return local
-        if current_app.config.get("TMDB_API_KEY"):
-            live = self._lookup_tmdb_api(title, year)
-            if live:
-                return live
-        return {"title": title}
-
     def _lookup_local(self, title: str, year: int | None) -> dict | None:
         if self._tmdb_df is None:
             return None
-        candidates = self._tmdb_df[self._tmdb_df["title_lower"] == title.lower().strip()]
-        if year is not None:
-            year_match = candidates[candidates["year"] == year]
-            if not year_match.empty:
-                candidates = year_match
-        if candidates.empty:
+        positions = self._by_title.get(title.lower().strip())
+        if not positions:
             return None
-        r = candidates.iloc[0]
+        if year is not None:
+            year_matches = [p for p in positions if self._tmdb_df["year"].iat[p] == year]
+            if year_matches:
+                positions = year_matches
+        r = self._tmdb_df.iloc[positions[0]]
         return self._row_to_dict(r)
 
     def _lookup_tmdb_api(self, title: str, year: int | None) -> dict | None:
