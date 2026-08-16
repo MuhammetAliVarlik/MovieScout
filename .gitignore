@@ -1,5 +1,7 @@
-# Data
-/data/
+# Data (keep the small processed dataset so a fresh clone works out of the box;
+# raw Kaggle files and the regenerable Chroma index stay ignored)
+/data/*
+!/data/processed/
 /models/
 
 
