@@ -1,87 +1,131 @@
+/* ── Design tokens ──────────────────────────────────────────────────────── */
+:root {
+    --bg: #0b0b0d;
+    --surface: #18181c;
+    --surface-2: #212127;
+    --text: #f2f2f4;
+    --text-muted: #9a9aa4;
+    --accent: #ff4d4d;
+    --accent-dark: #e63946;
+    --border: rgba(255, 255, 255, 0.08);
+
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 22px;
+
+    --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.45);
+
+    --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+body {
+    font-family: var(--font-sans);
+    color: var(--text);
+}
+
+/* ── Background & navbar ────────────────────────────────────────────────── */
 .background-image {
-    background: url(../img/desktop-wallpaper-film-posters-collage-movies-resolution.jpg) no-repeat center center fixed; 
-    -webkit-background-size: cover;
-    -moz-background-size: cover;
-    -o-background-size: cover;
+    background: url(../img/desktop-wallpaper-film-posters-collage-movies-resolution.jpg) no-repeat center center fixed;
     background-size: cover;
-    filter: blur(10px);
-    -webkit-filter: blur(10px);
+    filter: blur(14px);
     z-index: -1;
-    opacity: 0.5;
+    opacity: 0.35;
     width: 100vw;
     height: 100vh;
     position: fixed;
 }
-.bg-black{
-    background-color: #0f0f0f;
+
+.bg-black {
+    background-color: var(--surface);
 }
 
-/* Navbar'daki linkler için stil */
+#navbar {
+    background-color: rgba(11, 11, 13, 0.75) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+}
+
 .navbar-nav .nav-link {
-    color: #ddd !important; /* Navbar linklerinin beyaz olması */
+    color: var(--text-muted) !important;
+    font-weight: 500;
+    transition: color 0.2s ease;
 }
 
-/* Navbar linklerine hover efekti */
 .navbar-nav .nav-link:hover {
-    color: #b3acac !important;
+    color: var(--text) !important;
 }
 
-/* Brand için stil: Kalın yazı */
 .navbar-brand {
-    font-weight: bold; /* Brand metnini kalın yapar */
-    color: #ff4d4d !important; /* Brand rengini kırmızı yapar */
+    font-weight: 700;
+    color: var(--accent) !important;
     font-size: 25px;
-}
-.height{
-
-height: 20vh;
+    letter-spacing: -0.02em;
 }
 
-.form{
-
-position: relative;
+/* ── Search form ────────────────────────────────────────────────────────── */
+.height {
+    height: 20vh;
 }
 
-.form .fa-search{
-
-position: absolute;
-top:20px;
-left: 20px;
-color: #9ca3af;
-
+.form {
+    position: relative;
 }
 
-.form span{
-
-position: absolute;
-right: 17px;
-top: 13px;
-padding: 2px;
-border-left: 1px solid #d1d5db;
-
+.form .fa-search {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    color: var(--text-muted);
 }
 
-.left-pan{
-padding-left: 7px;
+.form span {
+    position: absolute;
+    right: 17px;
+    top: 13px;
+    padding: 2px;
+    border-left: 1px solid var(--border);
 }
 
-.left-pan i{
-
-padding-left: 10px;
+.left-pan {
+    padding-left: 7px;
 }
 
-.form-input{
-
-height: 55px;
-text-indent: 33px;
-border-radius: 10px;
+.left-pan i {
+    padding-left: 10px;
 }
 
-.form-input:focus{
-
-box-shadow: none;
-border:none;
+.form-input {
+    height: 55px;
+    text-indent: 33px;
+    border-radius: var(--radius-md);
+    background-color: var(--surface) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--border) !important;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
+
+.form-input::placeholder {
+    color: var(--text-muted);
+}
+
+.form-input:focus {
+    box-shadow: 0 0 0 3px rgba(255, 77, 77, 0.25) !important;
+    border-color: var(--accent) !important;
+}
+
+.dropdown-menu {
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+}
+
+/* ── Search results / posters ──────────────────────────────────────────── */
 .search-results {
     margin-top: 30px;
     display: flex;
@@ -93,22 +137,29 @@ border:none;
     margin: 10px;
     width: 200px;
     height: 300px;
-    object-fit: cover;  /* Ensures the image covers the space properly */
-    border-radius: 8px;
+    object-fit: cover;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
+
+.search-results .poster:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-md);
+}
+
 .plus-icon {
     position: absolute;
-    font-size: 3rem; /* Size of the plus icon */
-    color: #333; /* Icon color */
-    opacity: 0.5; /* Transparent background */
-    pointer-events: none; /* Disable clicks on the icon */
+    font-size: 3rem;
+    color: var(--text-muted);
+    opacity: 0.5;
+    pointer-events: none;
 }
 
 .image-container img {
-    visibility: hidden; /* Initially hide the image */
+    visibility: hidden;
 }
 
-/* When image is loaded, show the image and hide the icon */
 .image-container img.loaded {
     visibility: visible;
 }
@@ -118,71 +169,169 @@ border:none;
 }
 
 .image-container img.loaded + .plus-icon {
-    display: none; /* Hide the plus icon when the image is loaded */
+    display: none;
 }
 
-/* Optional: Ensure dropdown width matches the input */
-.dropdown-menu {
-    width: 100%; /* Make dropdown same width as input */
-    max-height: 200px; /* Limit height of dropdown */
-    overflow-y: auto; /* Add scroll if needed */
-}
 .delete-btn {
     opacity: 0;
     transition: opacity 0.3s ease;
 }
 
-/* When the poster is hovered, show the delete button */
 .poster:hover .delete-btn {
     opacity: 1;
 }
 
-/* Very High Similarity (80% and above) - Gold */
+/* ── Similarity badges ─────────────────────────────────────────────────── */
 .very-high-similarity {
-    background-color: #dc3545;  /* Red for low similarity */
-    color: white;  /* White text for contrast */
-    border: 2px solid #c82333;  /* Slight darker red border */
+    background-color: var(--accent-dark);
+    color: white;
+    border: 2px solid #c82333;
 }
 
-/* High Similarity (60% to 79%) - Green */
 .high-similarity {
-    background-color: #28a745;  /* Green for high similarity */
-    color: white;  /* White text for contrast */
-    border: 2px solid #218838;  /* Slight darker green border */
+    background-color: #28a745;
+    color: white;
+    border: 2px solid #218838;
 }
 
-/* Medium Similarity (50% to 59%) - Yellow */
 .medium-similarity {
-    background-color: #ffc107;  /* Yellow for medium similarity */
-    color: black;  /* Black text for contrast */
-    border: 2px solid #e0a800;  /* Slight darker yellow border */
+    background-color: #ffc107;
+    color: black;
+    border: 2px solid #e0a800;
 }
 
-/* Low Similarity (below 50%) - Red */
 .low-similarity {
-    background-color: #FFD700;  /* Gold for very high similarity */
-    color: white;  /* White text for better contrast */
-    border: 2px solid #e6b800;  /* Slight darker gold border */
-    
+    background-color: #FFD700;
+    color: white;
+    border: 2px solid #e6b800;
 }
 
+/* ── Discover swipe deck ───────────────────────────────────────────────── */
+.demo {
+    position: absolute;
+    left: 50%;
+    width: 100vw;
+    height: 35rem;
+    margin-left: -50vw;
+    margin-top: -2rem;
+}
 
+.demo__content {
+    overflow: hidden;
+    position: relative;
+    height: 100%;
+    padding-top: 0.5rem;
+    user-select: none;
+}
 
-/* Additional styling for the chat bubbles */
+.demo__card-cont {
+    position: relative;
+    width: min(22rem, 90vw);
+    height: 32rem;
+    margin: 0 auto 5rem;
+}
+
+.demo__card {
+    z-index: 2;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    transform-origin: 50% 100%;
+    box-shadow: var(--shadow-md);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.demo__card.reset {
+    transition: transform 0.3s;
+    transform: translateX(0) !important;
+}
+
+.demo__card.reset .demo__card__choice {
+    transition: opacity 0.3s;
+    opacity: 0 !important;
+}
+
+.demo__card.inactive {
+    transition: transform 0.3s;
+}
+
+.demo__card.to-left {
+    transform: translateX(-30rem) rotate(-30deg) !important;
+}
+
+.demo__card.to-right {
+    transform: translate(30rem) rotate(30deg) !important;
+}
+
+.demo__card.below {
+    z-index: 1;
+}
+
+.demo__card__top {
+    height: 14.5rem;
+    padding-top: 4rem;
+}
+
+.demo__card__btm {
+    height: 17.5rem;
+    overflow-y: auto;
+}
+
+.demo__card__choice {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.demo__card__choice.m--reject {
+    background: rgba(230, 57, 70, 0.55);
+}
+
+.demo__card__choice.m--like {
+    background: rgba(40, 167, 69, 0.55);
+}
+
+.demo__card__drag {
+    z-index: 5;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+}
+
+.demo__card__drag:active {
+    cursor: grabbing;
+}
+
+/* ── Chat ───────────────────────────────────────────────────────────────── */
 .chat-bubble {
-    padding: 15px;
-    border-radius: 20px;
+    padding: 15px 18px;
+    border-radius: var(--radius-lg);
     margin-bottom: 10px;
     max-width: 75%;
-    color: #f8f9fa;
+    color: var(--text);
+    box-shadow: var(--shadow-sm);
+    line-height: 1.5;
 }
+
 .chat-bubble.a1 {
-    background-color: #d32f2f;
+    background-color: var(--accent-dark);
     align-self: end;
 }
+
 .chat-bubble.a2 {
-    background-color: #333333;
+    background-color: var(--surface-2);
     align-self: start;
+    border: 1px solid var(--border);
 }
 
 .typing-dots {
@@ -197,7 +346,7 @@ border:none;
     display: block;
     width: 8px;
     height: 8px;
-    background-color: #bbb;
+    background-color: var(--text-muted);
     border-radius: 50%;
     animation: typing-dots 1.5s infinite;
 }
@@ -221,24 +370,38 @@ border:none;
     }
 }
 
+/* ── Buttons ────────────────────────────────────────────────────────────── */
+.btn-danger {
+    background-color: var(--accent);
+    border-color: var(--accent);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
 
+.btn-danger:hover {
+    background-color: var(--accent-dark);
+    border-color: var(--accent-dark);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
 
-/* custom scrollbar */
+/* ── Custom scrollbar ───────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
-    width: 20px;
-  }
-  
-  ::-webkit-scrollbar-track {
+    width: 14px;
+}
+
+::-webkit-scrollbar-track {
     background-color: transparent;
-  }
-  
-  ::-webkit-scrollbar-thumb {
-    background-color: #ff4d4d;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: var(--accent);
     border-radius: 20px;
-    border: 6px solid transparent;
+    border: 4px solid transparent;
     background-clip: content-box;
-  }
-  
-  ::-webkit-scrollbar-thumb:hover {
-    background-color: #f13b3b;
-  }
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: var(--accent-dark);
+}

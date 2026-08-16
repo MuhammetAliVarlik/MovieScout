@@ -1,93 +1,61 @@
 ## Project Organization
 
 ```
-├── LICENSE            <- Open-source license if one is chosen
-├── Makefile           <- Makefile with convenience commands like `make data` or `make train`
-├── README.md          <- The top-level README for developers using this project. It usually contains project description, setup instructions, and usage.
+├── LICENSE            <- Open-source license (MIT)
+├── Makefile           <- Convenience commands (make requirements/lint/format/test)
+├── README.md          <- Project description, setup instructions, and usage
 ├── data               <- Directory for handling all data files
 │   ├── external       <- Data from third party sources (e.g., raw datasets, APIs)
 │   ├── interim        <- Intermediate data that has been processed or transformed but is not final yet
-│   ├── processed      <- The final, canonical data sets for modeling (cleaned and ready for use)
-│   └── raw            <- The original, immutable data dump (data as received, unmodified)
+│   ├── processed      <- The final, canonical dataset (TMDB.csv, ships with the repo)
+│   └── raw            <- The original, immutable data dump (gitignored — large Kaggle files)
 │
-├── docs               <- A default mkdocs project; documentation for project setup and usage, can be built into HTML for easy access
+├── docs               <- Screenshots/media used by README
 │
-├── models             <- Directory containing trained models and model-related data
-│   └── serialized     <- Trained and serialized models, model predictions, or model summaries
+├── models             <- Gitignored; unused now that chat runs on Ollama instead of a local GGUF file
 │
-├── notebooks          <- Jupyter notebooks for data exploration, model testing, etc.
-│                         Naming convention is a number (for ordering), the creator's initials, and a short `-` delimited description, e.g.
-│                         `1.0-jqp-initial-data-exploration` for the first notebook by JQP that explores the data.
+├── notebooks          <- Jupyter notebooks used during initial data exploration/preprocessing
 │
-├── pyproject.toml     <- Project configuration file with package metadata for 'moviescout' and configuration for tools like `black` (Python code formatter)
+├── pyproject.toml     <- Project metadata + tool config (black, ruff/isort, pytest)
 │
-├── references         <- Contains data dictionaries, manuals, and other explanatory materials
-│   └── documentation  <- Any additional documentation or reference materials needed for understanding the project
+├── references         <- Data dictionaries, manuals, and other explanatory materials
 │
-├── reports            <- Generated reports from analysis (e.g., HTML, PDF, LaTeX)
-│   └── figures        <- Directory for storing generated graphics and figures to be used in reporting or documentation
+├── reports            <- Generated reports/figures from analysis
 │
-├── requirements.txt   <- The requirements file for reproducing the analysis environment, typically generated using `pip freeze > requirements.txt`
+├── requirements.txt   <- Pip dependencies (single canonical install path)
 │
-├── setup.cfg          <- Configuration file for tools like flake8 (for code style checks)
+├── setup.cfg          <- flake8 configuration
 │
-└── moviescout         <- Source code for use in this project; the main package directory
+├── run.py             <- Entry point: builds the app via app.create_app() and runs it
+│
+├── tests              <- Pytest suite
+│   ├── conftest.py
+│   ├── test_letterboxd.py
+│   └── test_models.py
+│
+└── app                <- Flask application package
     │
-    ├── __init__.py             <- Makes 'moviescout' a Python package
+    ├── __init__.py             <- create_app() factory: config, extensions, blueprint registration
+    ├── config.py                <- Pydantic Settings (env-driven configuration)
+    ├── extensions.py             <- Shared Flask extensions (cache)
     │
-    ├── run.py                 <- Stores useful variables and configuration (e.g., paths, setup parameters, etc.)
+    ├── blueprints
+    │   ├── home                <- Search + recommendations UI (/, /search_movies, /find_similar_movies)
+    │   ├── discover             <- Swipe-to-discover UI (/discover)
+    │   ├── chat                 <- LLM chat UI (/chat, /chat/stream, /chat/search)
+    │   └── api                  <- /api/import (Letterboxd), /api/profile, /api/watchlist/export
     │
-    └── blueprints             <- Contains the blueprints for the web application (if using a framework like Flask)
-        │
-        ├── __init__.py         <- Makes the 'blueprints' directory a package
-        │
-        ├── blueprints          <- Main directory for defining application views or routes
-        │   │
-        │   ├── home            <- Home page blueprints
-        │   │   │
-        │   │   ├── static      <- Static assets (images, JS, CSS) related to the home page
-        │   │   ├── templates   <- HTML templates for the home page
-        │   │   └── home.py      <- Python file defining the route and logic for the home page
-        │   │
-        │   ├── movies_chat     <- Blueprint for the movie chat feature (e.g., chat interface for movie suggestions)
-        │   │   │
-        │   │   ├── static      <- Static assets (images, JS, CSS) related to movies chat
-        │   │   ├── templates   <- HTML templates for movies chat
-        │   │   └── movies_chat.py  <- Python file defining the route and logic for the movies chat
-        │   │
-        │   └── similar_movies  <- Blueprint for the similar movie recommendation feature
-        │       │
-        │       ├── static      <- Static assets (images, JS, CSS) related to similar movie recommendations
-        │       ├── templates   <- HTML templates for similar movie recommendations
-        │       └── similar_movies.py  <- Python file defining the route and logic for similar movies feature
-        ├── resources           <- Contains reusable resources like utilities, data downloaders, and other logic
-        │   │
-        │   ├── __init__.py     <- Makes the 'resources' directory a package
-        │   │
-        │   ├── config.py       <- Configuration file for settings such as API keys, paths, etc.
-        │   ├── datasetDownloader.py   <- Python module to handle downloading datasets
-        │   ├── modelDownloader.py     <- Python module for downloading models
-        │   ├── moviesRAG.py        <- Python module for movie-related Retrieval-Augmented Generation tasks
-        │   ├── moviesRecommendationEngine.py  <- Python module for recommendation engine logic
-        │   ├── searchMovies.py      <- Python module to search and retrieve movie data
-        │   └── resources.yaml    <- YAML configuration file for resources used across the project
-        │
-        ├── static              <- Folder containing static assets for the app (CSS, images, JS, etc.)
-        │   │
-        │   ├── css             <- Stylesheets for styling the application
-        │   ├── img             <- Images used across the application
-        │   ├── js              <- JavaScript files for interactive functionality
-        │   └── scss            <- SCSS files if using SASS for styling
-        ├── templates           <- Folder containing HTML templates
-        │   │
-        │   └── partials        <- Folder for reusable HTML components or partials
-        │       │
-        │       ├── details_modal.html    <- Modal HTML for displaying movie details
-        │       ├── liked_modal.html      <- Modal HTML for liked movies
-        │       └── navbar.html           <- Navbar HTML component for site navigation
-        │
-        └── tests               <- Directory containing test cases for the project
-
+    ├── services
+    │   ├── recommendation.py    <- MovieRecommendationEngine (ChromaDB semantic search)
+    │   ├── search.py             <- MovieSearchService
+    │   ├── rag.py                 <- FilmRAG — local LLM chat via Ollama
+    │   └── letterboxd.py          <- LetterboxdImporter — parses a Letterboxd export
+    │
+    ├── models
+    │   └── movie.py              <- Movie, RatedMovie, TasteProfile (pydantic)
+    │
+    ├── static                    <- App-level static assets (CSS, JS)
+    └── templates                 <- App-level templates + shared partials (navbar, modals)
 ```
 
 ---

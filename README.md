@@ -9,9 +9,6 @@
 <a target="_blank" href="https://www.w3.org/Style/CSS/">
     <img src="https://img.shields.io/badge/CSS3-1572B6?logo=css3&logoColor=white" />
 </a>
-<a target="_blank" href="https://sass-lang.com/">
-    <img src="https://img.shields.io/badge/SCSS-CC6699?logo=sass&logoColor=white" />
-</a>
 <a target="_blank" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript">
     <img src="https://img.shields.io/badge/JavaScript-F7DF1E?logo=javascript&logoColor=black" />
 </a>
@@ -24,74 +21,40 @@
 <a target="_blank" href="https://www.themoviedb.org/documentation/api">
     <img src="https://img.shields.io/badge/TMDB-00B5E2?logo=themoviedb&logoColor=white" />
 </a>
-<a target="_blank" href="https://www.langchain.com/">
-    <img src="https://img.shields.io/badge/Langchain-1B1D29?logo=langchain&logoColor=white" />
+<a target="_blank" href="https://ollama.com">
+    <img src="https://img.shields.io/badge/Ollama-000000?logo=ollama&logoColor=white" />
 </a>
 
 --
-A modern web application that helps you find and explore movies based on your interests. By leveraging the TMDB dataset and semantic search, this app allows you to swipe through movie recommendations and store your favorites locally. Additionally, the app utilizes a custom-built large language model (LLM) for personalized film suggestions.
+A web application that helps you find and explore movies based on your interests. By leveraging the TMDB dataset and semantic search, MovieScout lets you search for films, swipe through recommendations, import your Letterboxd ratings history, and chat with a local LLM for personalized suggestions.
 
 ---
 
 ## 🚀 Features
 
-- **Search Movies**: Search for movies using the TMDB dataset through an intuitive search input on the homepage.
-- **Swipe to Like**: A swipe interface to like/dislike movies and store favorites in local storage.
-- **Semantic Search**: Find similar movies using semantic search for a more personalized recommendation experience.
-- **Personalized Recommendations**: Receive additional movie suggestions via a recommender system built with a custom LLM and retrieval-augmented generation (RAG).
+- **Search Movies**: Search for movies using the built-in TMDB dataset through an intuitive search input on the homepage.
+- **Swipe to Discover**: A swipe interface to like/dislike movies and build up your favorites.
+- **Semantic Search & Recommendations**: Find similar movies using a ChromaDB-backed embedding search.
+- **Import your Letterboxd ratings**: Upload a Letterboxd export `.zip` (or a bare `ratings.csv`) at `/api/import` — MovieScout parses your ratings, enriches them against the local TMDB dataset, and excludes films you've already watched from future recommendations.
+- **LLM Chat**: Ask a local LLM (via [Ollama](https://ollama.com)) for personalized recommendations, aware of your imported taste profile.
 - **Responsive Design**: Optimized for both desktop and mobile viewing.
 
 ---
 
 ## 🧑‍💻 Technologies Used
 
-This project utilizes a range of modern web technologies for both the frontend and backend. Below are the key technologies and their roles in the application:
-
 ### Frontend
-
-<p>
-  <strong>HTML5</strong>: The foundation of the project, used to structure the web pages and define semantic content.
-</p>
-
-<p>
-  <strong>CSS3</strong>: Used for styling the pages with custom layouts, colors, and visual effects.
-</p>
-
-<p>
-  <strong>SCSS</strong>: CSS preprocessor used for writing more maintainable and reusable styles.
-</p>
-
-<p>
-  <strong>JavaScript</strong>: Handles dynamic functionality, including movie search, semantic search, and swipe actions.
-</p>
-
-<p>
-  <strong>Bootstrap 5</strong>: A CSS framework used for responsive design and quick UI development, making the app mobile-friendly.
-</p>
+HTML5, CSS3, JavaScript, Bootstrap 5.
 
 ### Backend
+Flask, ChromaDB (semantic search), Sentence-Transformers (embeddings), Ollama (local LLM chat).
 
-<p>
-  
-  <strong>Flask</strong>: A lightweight Python web framework used to serve the application and manage backend logic.
-</p>
-
-### Datasets & Libraries
-
-<p>
-  <strong>TMDB Dataset</strong>: Provides access to a vast database of movies, which is used to fetch movie data (e.g., titles, descriptions, images). 
-  <a href="https://www.kaggle.com/datasets/asaniczka/tmdb-movies-dataset-2023-930k-movies">Full TMDB Movies Dataset 2024 (1M Movies) ~ asaniczka</a>
-</p>
-
-<p>
-  <strong>Langchain</strong>: A library used for building advanced language model-powered systems. In this project, it is used to generate personalized movie recommendations with retrieval-augmented generation (RAG).
-</p>
+### Dataset
+[TMDB Movies Dataset (asaniczka, Kaggle)](https://www.kaggle.com/datasets/asaniczka/tmdb-movies-dataset-2023-930k-movies) — a processed subset ships with this repo, so no separate download is needed for search/discover/recommendations/Letterboxd import.
 
 ---
 
 ## 📸 Media
-
-Here are some screenshots to give you a glimpse of the app's interface:
 
 ### Homepage:
 
@@ -111,27 +74,42 @@ Here are some screenshots to give you a glimpse of the app's interface:
 
 ## 📦 Installation
 
-To run the project locally, follow these steps:
+To run the project locally:
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/username/moviescout.git
-   cd moviescout
+   git clone https://github.com/MuhammetAliVarlik/MovieScout.git
+   cd MovieScout
    ```
-2. **Create and activate the Conda environment**:
-   Use the environment.yml file to set up the required dependencies.
-
+2. **Install dependencies** (Python 3.10+):
    ```bash
-   conda env create -f environment.yml
-   conda activate moviescout
+   pip install -r requirements.txt
    ```
-
-3. **Run the project**:
-   After activating the environment, you can run the project using the following command:
+3. **Configure environment variables**:
    ```bash
-   cd moviescout
+   cp .env.example .env
+   ```
+   The defaults work out of the box — `TMDB_API_KEY` is optional (only used to enrich Letterboxd imports for films missing from the local dataset).
+4. **Run the app**:
+   ```bash
    python run.py
    ```
+   Visit `http://localhost:5000`. Search, discover, recommendations, and Letterboxd import all work immediately — the processed TMDB dataset ships in the repo, and the ChromaDB index is built automatically on first request.
+
+### Optional: enable LLM chat
+
+The `/chat` page needs a local LLM served by [Ollama](https://ollama.com). Every other feature works without it.
+
+```bash
+# Install Ollama from https://ollama.com, then:
+ollama pull llama3.2:3b
+```
+
+Ollama typically starts its server automatically; if not, run `ollama serve`. Without it, `/chat` still loads and shows a clear inline message explaining what to do instead of failing.
+
+## 🔒 Security notes
+
+This is a portfolio/demo project. There are no user accounts, and the only state-changing endpoints (search, recommendations, Letterboxd import) are same-origin form/file submissions with no destructive cross-site action, so CSRF/CORS middleware was intentionally left out to keep the app simple. Treat it accordingly if you extend it toward a multi-user deployment.
 
 ## 🤝 Contributing
 

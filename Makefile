@@ -14,8 +14,8 @@ PYTHON_INTERPRETER = python
 ## Install Python Dependencies
 .PHONY: requirements
 requirements:
-	conda env update --name $(PROJECT_NAME) --file environment.yml --prune
-	
+	pip install -r requirements.txt
+
 
 
 
@@ -28,26 +28,19 @@ clean:
 ## Lint using flake8 and black (use `make format` to do formatting)
 .PHONY: lint
 lint:
-	flake8 moviescout
-	isort --check --diff --profile black moviescout
-	black --check --config pyproject.toml moviescout
+	flake8 app tests
+	isort --check --diff --profile black app tests
+	black --check --config pyproject.toml app tests
 
 ## Format source code with black
 .PHONY: format
 format:
-	black --config pyproject.toml moviescout
+	black --config pyproject.toml app tests
 
-
-
-
-## Set up python interpreter environment
-.PHONY: create_environment
-create_environment:
-	conda env create --name $(PROJECT_NAME) -f environment.yml
-	
-	@echo ">>> conda env created. Activate with:\nconda activate $(PROJECT_NAME)"
-	
-
+## Run the test suite
+.PHONY: test
+test:
+	pytest
 
 
 #################################################################################
