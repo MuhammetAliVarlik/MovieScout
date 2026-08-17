@@ -4,8 +4,8 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "moviescout"
-version = "0.0.1"
-description = "An application to find movies similar to given movies"
+version = "0.1.0"
+description = "A movie discovery app: semantic search, swipe-to-discover, Letterboxd import, and taste-aware local LLM chat"
 authors = [
   { name = "Muhammet Ali Varl\u0131k" },
 ]
@@ -17,15 +17,8 @@ classifiers = [
 ]
 requires-python = "~=3.10"
 
-[tool.black]
+[tool.ruff]
 line-length = 99
-include = '\.pyi?$'
-exclude = '''
-/(
-    \.git
-  | \.venv
-)/
-'''
 
 [tool.ruff.lint.isort]
 known_first_party = ["app"]
