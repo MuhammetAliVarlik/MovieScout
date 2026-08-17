@@ -1,4 +1,6 @@
-from pydantic import BaseModel
+import re
+
+from pydantic import BaseModel, computed_field
 from datetime import date
 
 
@@ -15,7 +17,18 @@ class Movie(BaseModel):
     vote_count: int = 0
     status: str | None = None
     similarity_score: float | None = None
-    letterboxd_slug: str | None = None
+
+    @computed_field
+    @property
+    def letterboxd_url(self) -> str:
+        # Best-effort guess at the real Letterboxd slug — Letterboxd has no
+        # public lookup API, so this is the same title-to-slug convention
+        # Letterboxd itself uses, not a verified match.
+        slug = re.sub(r"[^a-z0-9]+", "-", self.title.lower()).strip("-")
+        year = (self.release_date or "")[:4]
+        if year.isdigit():
+            return f"https://letterboxd.com/film/{slug}-{year}/"
+        return f"https://letterboxd.com/film/{slug}/"
 
 
 class RatedMovie(Movie):

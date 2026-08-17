@@ -36,6 +36,8 @@ document.getElementById("searchInput").addEventListener("keyup", async function 
             a.dataset.vote = movie.vote_average;
             a.dataset.release = movie.release_date;
             a.dataset.poster = movie.poster_path;
+            a.dataset.genres = movie.genres;
+            a.dataset.letterboxdUrl = movie.letterboxd_url;
             a.innerHTML = `
                 <img src="https://image.tmdb.org/t/p/w200/${movie.poster_path}"
                      alt="${movie.title}" class="img-fluid"
@@ -61,6 +63,8 @@ document.addEventListener("click", function (e) {
         const overview = item.dataset.overview;
         const vote     = item.dataset.vote;
         const release  = item.dataset.release;
+        const genres   = item.dataset.genres;
+        const letterboxdUrl = item.dataset.letterboxdUrl;
 
         if (!selectedMovies.some(m => m.title === title)) {
             selectedMovies.push({ title, poster });
@@ -72,6 +76,8 @@ document.addEventListener("click", function (e) {
             div.dataset.vote     = vote;
             div.dataset.release  = release;
             div.dataset.poster   = poster;
+            div.dataset.genres   = genres;
+            div.dataset.letterboxdUrl = letterboxdUrl;
             div.innerHTML = `
                 <img src="https://image.tmdb.org/t/p/w200/${poster}"
                      alt="${title}" class="img-fluid mx-auto d-block">
@@ -107,6 +113,12 @@ document.addEventListener("click", function (e) {
 async function findSimilarFilms(titles) {
     const form = new FormData();
     titles.forEach(t => form.append("movies[]", t));
+
+    const genre = document.getElementById("genreFilter")?.value;
+    if (genre) form.append("genre", genre);
+    const minRating = document.getElementById("minRatingFilter")?.value;
+    if (minRating) form.append("min_rating", minRating);
+
     const res = await fetch("/find_similar_movies", { method: "POST", body: form });
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));

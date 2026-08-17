@@ -2,8 +2,10 @@
 // Streams responses from /chat/stream using fetch() + ReadableStream.
 // After streaming ends, extracts film titles from the response and
 // fetches TMDB cards via /chat/search for each one.
-
-let likedFilms = JSON.parse(localStorage.getItem("likedFilms") || "[]");
+//
+// Saved films go into the same `likedMovies` list main.js manages (shared
+// with the Discover swipe deck and the Home search grid), not a separate
+// list — otherwise a film liked here would never show up anywhere else.
 
 // ─── Message sending ──────────────────────────────────────────────────────────
 
@@ -84,7 +86,6 @@ function buildFilmCard(film) {
         ? `https://image.tmdb.org/t/p/w200/${film.poster_path}`
         : "/static/img/no-poster.png";
     const year = film.release_date ? film.release_date.slice(0, 4) : "";
-    const lbSlug = film.title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
     return `
         <div class="film-card bg-black rounded-3 p-2 text-white" style="width:140px; cursor:pointer;"
@@ -100,7 +101,7 @@ function buildFilmCard(film) {
             <p class="mb-1 text-muted" style="font-size:0.7rem;">${year}</p>
             <div class="d-flex gap-1">
                 <button class="btn btn-sm btn-light w-100 save-film-btn">❤</button>
-                <a href="https://letterboxd.com/film/${lbSlug}/"
+                <a href="${film.letterboxd_url}"
                    target="_blank" rel="noopener noreferrer"
                    class="btn btn-sm btn-outline-light w-100">LB</a>
             </div>
@@ -123,9 +124,11 @@ document.addEventListener("click", function (e) {
         poster_path:  card.dataset.moviePoster,
         genres:       card.dataset.movieGenres,
     };
-    if (!likedFilms.some(f => f.title === film.title)) {
-        likedFilms.push(film);
-        localStorage.setItem("likedFilms", JSON.stringify(likedFilms));
+    if (!likedMovies.some(m => m.title === film.title)) {
+        likedMovies.push(film);
+        saveLikedMovies();
+        updateLikedMoviesCount(likedMovies);
+        updateLikedMoviesList(likedMovies);
         btn.textContent = "✓";
         btn.disabled = true;
     }

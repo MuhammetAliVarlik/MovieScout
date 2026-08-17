@@ -69,6 +69,39 @@ document.addEventListener("click", function (e) {
     }
 });
 
+async function exportWatchlistToLetterboxd() {
+    if (!likedMovies.length) {
+        alert("Your watchlist is empty — like some films first.");
+        return;
+    }
+    try {
+        const res = await fetch("/api/watchlist/export", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(likedMovies),
+        });
+        if (!res.ok) throw new Error("Export failed");
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "cinematch_watchlist.csv";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    } catch (err) {
+        console.error("Watchlist export failed:", err);
+        alert("Couldn't export your watchlist. Please try again.");
+    }
+}
+
+document.addEventListener("click", function (e) {
+    if (e.target.closest("#exportWatchlist")) {
+        exportWatchlistToLetterboxd();
+    }
+});
+
 document.addEventListener("DOMContentLoaded", function () {
     likedMovies = loadLikedMovies();
     if (likedMovies.length > 0) {
@@ -98,8 +131,10 @@ async function refreshTasteProfilePill() {
 
 // ─── Movie details modal ────────────────────────────────────────────────────────
 
+let currentModalMovie = null;
+
 document.addEventListener("click", function (e) {
-    const card = e.target.closest(".poster");
+    const card = e.target.closest(".poster, .demo__card");
     if (!card) return;
     const d = card.dataset;
 
@@ -109,8 +144,49 @@ document.addEventListener("click", function (e) {
     document.getElementById("modal-vote").textContent = d.vote;
     document.getElementById("modal-release-date").textContent = d.release;
     document.getElementById("modal-genres").textContent = d.genres;
+    document.getElementById("modal-letterboxd-link").href = d.letterboxdUrl || "#";
+
+    currentModalMovie = {
+        title: d.title,
+        poster_path: d.poster,
+        overview: d.overview,
+        vote_average: d.vote,
+        release_date: d.release,
+        genres: d.genres,
+    };
+
+    const saveBtn = document.getElementById("modal-save-watchlist");
+    const alreadySaved = likedMovies.some(m => m.title === currentModalMovie.title);
+    saveBtn.textContent = alreadySaved ? "Saved ✓" : "Save to Watchlist";
+    saveBtn.disabled = alreadySaved;
 
     new bootstrap.Modal(document.getElementById("movieModal")).show();
+});
+
+document.getElementById("modal-find-similar").addEventListener("click", async function () {
+    if (!currentModalMovie) return;
+    const form = new FormData();
+    form.append("movies[]", currentModalMovie.title);
+    const res = await fetch("/find_similar_movies", { method: "POST", body: form });
+    if (res.ok) {
+        window.location.href = "/discover";
+    } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.message || "Something went wrong. Please try again.");
+    }
+});
+
+document.getElementById("modal-save-watchlist").addEventListener("click", function () {
+    if (!currentModalMovie) return;
+    if (!likedMovies.some(m => m.title === currentModalMovie.title)) {
+        likedMovies.push(currentModalMovie);
+        saveLikedMovies();
+        updateLikedMoviesCount(likedMovies);
+        updateLikedMoviesList(likedMovies);
+    }
+    const btn = document.getElementById("modal-save-watchlist");
+    btn.textContent = "Saved ✓";
+    btn.disabled = true;
 });
 
 // ─── Letterboxd import ───────────────────────────────────────────────────────────

@@ -52,16 +52,20 @@ def get_profile():
     return jsonify(LetterboxdImporter.summarise(profile))
 
 
-@api_bp.route("/watchlist/export", methods=["GET"])
+@api_bp.route("/watchlist/export", methods=["POST"])
 def export_watchlist():
     """
-    Export the in-session watchlist as a Letterboxd-compatible CSV.
-    The user can import this back into Letterboxd directly.
+    Export the given watchlist (the client's localStorage-held liked films,
+    sent in the request body) as a Letterboxd-compatible CSV. The user can
+    import this back into Letterboxd directly.
     """
     import csv
     import io
 
-    watchlist = session.get("watchlist", [])
+    watchlist = request.get_json(silent=True) or []
+    if not isinstance(watchlist, list):
+        return jsonify({"error": "Expected a JSON array of films"}), 400
+
     output = io.StringIO()
     writer = csv.DictWriter(output, fieldnames=["Title", "Year", "Rating10"])
     writer.writeheader()
