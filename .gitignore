@@ -1,7 +1,12 @@
-# Data (keep the small processed dataset so a fresh clone works out of the box;
-# raw Kaggle files and the regenerable Chroma index stay ignored)
+# Data — TMDB's API terms prohibit redistributing their data, so nothing
+# under data/ is shipped; run scripts/setup.py to fetch/build it locally.
+# (Excluding a file inside an already-excluded parent directory doesn't
+# work in gitignore, so data/processed/ itself has to stay un-ignored and
+# everything inside *that* gets re-excluded instead, bar the placeholder.)
 /data/*
 !/data/processed/
+/data/processed/*
+!/data/processed/.gitkeep
 /models/
 
 # Personal AI-refactor planning/scratch doc — not portfolio material

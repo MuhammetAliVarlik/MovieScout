@@ -1,12 +1,16 @@
+import json
 import os
-import pickle
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
 import pandas as pd
 import chromadb
 from chromadb.utils import embedding_functions
-from sklearn.metrics.pairwise import cosine_similarity
 from app.models import Movie
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+STALE_AFTER = timedelta(days=int(5.5 * 30))  # ~5.5 months, safely under TMDB's 6-month cache limit
 
 
 class MovieRecommendationEngine:
@@ -15,6 +19,7 @@ class MovieRecommendationEngine:
         csv_file_path: str | None = None,
         persist_path: str | None = None,
         embedding_model: str = "all-MiniLM-L6-v2",
+        require_populated: bool = True,
     ):
         self.csv_file_path = csv_file_path or os.path.join(
             CURRENT_DIR, "..", "..", "data", "processed", "TMDB.csv"
@@ -30,16 +35,43 @@ class MovieRecommendationEngine:
         )
 
         self._load_csv()
-        self._load_or_create_chroma()
+        self._check_freshness()
+        self._load_or_create_chroma(require_populated=require_populated)
 
     # ── Data loading ──────────────────────────────────────────────────────────
 
     def _load_csv(self) -> None:
+        if not os.path.exists(self.csv_file_path):
+            raise RuntimeError(
+                f"No movie dataset found at {self.csv_file_path!r}.\n"
+                "MovieScout no longer ships a bundled dataset (TMDB's terms don't allow "
+                "redistributing their data) — fetch your own with:\n\n"
+                "    python scripts/build_dataset.py\n\n"
+                "(requires a free TMDB_API_KEY in .env — see themoviedb.org/settings/api)"
+            )
         self.df = pd.read_csv(self.csv_file_path)
         self.df["genres"] = self.df["genres"].fillna("")
         print("CSV loaded.")
 
-    def _load_or_create_chroma(self) -> None:
+    def _check_freshness(self) -> None:
+        """Warn (don't block) if the dataset is approaching TMDB's 6-month cache limit."""
+        meta_path = Path(self.csv_file_path).parent.parent / ".fetch_meta.json"
+        if not meta_path.exists():
+            return
+        try:
+            meta = json.loads(meta_path.read_text())
+            fetched_at = datetime.fromisoformat(meta["fetched_at"])
+        except (json.JSONDecodeError, KeyError, ValueError):
+            return
+        age = datetime.now(timezone.utc) - fetched_at
+        if age > STALE_AFTER:
+            print(
+                f"[WARNING] Local dataset was fetched {age.days} days ago, approaching "
+                "TMDB's 6-month cache limit. Consider re-running "
+                "`python scripts/build_dataset.py` to refresh it."
+            )
+
+    def _load_or_create_chroma(self, require_populated: bool = True) -> None:
         os.makedirs(self.persist_path, exist_ok=True)
         client = chromadb.PersistentClient(path=self.persist_path)
         self.collection = client.get_or_create_collection(
@@ -48,13 +80,17 @@ class MovieRecommendationEngine:
             metadata={"hnsw:space": "cosine"},
         )
         if self.collection.count() == 0:
-            self._populate_chroma()
-            print("ChromaDB collection created and populated.")
-        else:
-            print(f"ChromaDB collection loaded ({self.collection.count()} docs).")
+            if require_populated:
+                raise RuntimeError(
+                    "The semantic search index is empty. Build it with:\n\n"
+                    "    python scripts/build_index.py\n\n"
+                    "(run this once after fetching the dataset with scripts/build_dataset.py)"
+                )
+            return
+        print(f"ChromaDB collection loaded ({self.collection.count()} docs).")
 
-    def _populate_chroma(self) -> None:
-        """Index every movie's combined text into ChromaDB."""
+    def populate(self, batch_size: int = 500, show_progress: bool = False) -> None:
+        """Embed every movie's combined text into ChromaDB. Safe to re-run (upserts)."""
         assert self.df is not None
         docs, ids, metadatas = [], [], []
         for _, row in self.df.iterrows():
@@ -64,14 +100,23 @@ class MovieRecommendationEngine:
             ids.append(movie_id)
             metadatas.append({"title": str(row.get("title", ""))})
 
-        # ChromaDB has a max batch size of 5461
-        batch = 5000
-        for i in range(0, len(docs), batch):
-            self.collection.add(
-                documents=docs[i : i + batch],
-                ids=ids[i : i + batch],
-                metadatas=metadatas[i : i + batch],
+        progress = None
+        if show_progress:
+            from tqdm import tqdm
+
+            progress = tqdm(total=len(docs), desc="Embedding movies", unit="movie")
+
+        for i in range(0, len(docs), batch_size):
+            self.collection.upsert(
+                documents=docs[i : i + batch_size],
+                ids=ids[i : i + batch_size],
+                metadatas=metadatas[i : i + batch_size],
             )
+            if progress is not None:
+                progress.update(min(batch_size, len(docs) - i))
+
+        if progress is not None:
+            progress.close()
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -79,7 +124,7 @@ class MovieRecommendationEngine:
         """
         Resolve a ChromaDB document id back to its row in self.df.
 
-        _populate_chroma() ids each document with row["id"] when the dataset
+        populate() ids each document with row["id"] when the dataset
         has a real "id" column, falling back to the DataFrame's row index
         otherwise (the shipped TMDB.csv has no "id" column, so ids are the
         row index). Mirror that same fallback here so lookups always match.

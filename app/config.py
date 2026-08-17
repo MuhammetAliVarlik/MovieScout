@@ -14,6 +14,7 @@ class Config(BaseSettings):
 
     TMDB_API_KEY: str = ""
     TMDB_DATASET_PATH: Path = Path("./data/processed/TMDB.csv")
+    TMDB_BUILD_LIMIT: int = 20000
 
     CHROMA_PERSIST_PATH: Path = Path("./data/chroma")
 
