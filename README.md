@@ -56,7 +56,7 @@ HTML5, CSS3, JavaScript, Bootstrap 5.
 Flask, ChromaDB (semantic search), Sentence-Transformers (embeddings), Ollama (local LLM chat).
 
 ### Dataset
-[TMDB Movies Dataset (asaniczka, Kaggle)](https://www.kaggle.com/datasets/asaniczka/tmdb-movies-dataset-2023-930k-movies) — a processed subset ships with this repo, so no separate download is needed for search/discover/recommendations/Letterboxd import.
+Fetched directly from [the TMDB API](https://www.themoviedb.org/documentation/api) — the top ~20,000 most popular movies by default, configurable. Nothing is bundled with the repo: TMDB's API terms don't allow redistributing their data, so `scripts/build_dataset.py` fetches your own local copy with your own free API key as part of setup, below. This is a deliberate scope choice, not a limitation — semantic recommendations work fine over a large, popularity-ranked subset, and a bounded fetch is fast and stays well within TMDB's rate limits.
 
 ---
 
@@ -167,12 +167,25 @@ To run the project locally:
    ```bash
    cp .env.example .env
    ```
-   The defaults work out of the box — `TMDB_API_KEY` is optional (only used to enrich Letterboxd imports for films missing from the local dataset).
-4. **Run the app**:
+   Add a free TMDB API key ([themoviedb.org/settings/api](https://www.themoviedb.org/settings/api), no approval needed for non-commercial use) — `TMDB_API_KEY=...` in `.env`. Required for the next step; optional at runtime after that (only used as a Letterboxd-import enrichment fallback).
+4. **Fetch the dataset and build the search index**:
+   ```bash
+   python scripts/setup.py
+   ```
+   Runs two explicit, progress-visible steps: fetching the top `TMDB_BUILD_LIMIT` (default 20,000) most popular movies from TMDB, then embedding them into a local ChromaDB index for semantic search. See the timing table below to set expectations — this only needs to be run once (or again later to refresh stale data).
+5. **Run the app**:
    ```bash
    python run.py
    ```
-   Visit `http://localhost:5000`. Search, discover, recommendations, and Letterboxd import all work immediately — the processed TMDB dataset ships in the repo, and the ChromaDB index is built automatically on first request.
+   Visit `http://localhost:5000`.
+
+   | N (movies) | Fetch (TMDB API) | Indexing (CPU) | Indexing (GPU) |
+   |---|---|---|---|
+   | 5,000 | ~2–3 min | ~1–2 min | seconds |
+   | 20,000 (default) | ~8–12 min | ~3–5 min | ~1 min |
+   | 50,000 | ~20–30 min | ~8–12 min | ~2–3 min |
+
+   Rough estimates — actual time depends on your connection speed, CPU, and whether `sentence-transformers` has a GPU available.
 
 ### Optional: enable LLM chat
 
@@ -188,11 +201,12 @@ Ollama typically starts its server automatically; if not, run `ollama serve`. Wi
 ### 🐳 Run with Docker
 
 ```bash
-cp .env.example .env   # skip if you already created one above
+cp .env.example .env   # skip if you already created one above, add your TMDB_API_KEY
+docker compose run --rm web python scripts/setup.py   # fetch + index, once
 docker compose up --build
 ```
 
-Visit `http://localhost:5000`. The first build installs everything from scratch (sentence-transformers, ChromaDB, etc.) so it can take several minutes; later builds reuse Docker's layer cache and are fast. `docker-compose.yml` bind-mounts `./data` into the container, so the dataset and ChromaDB index persist across restarts. Ollama (for `/chat`) isn't containerized here — it's expected to run on the host, or point `OLLAMA_HOST` in `.env` at wherever it's reachable.
+Visit `http://localhost:5000`. The first build installs everything from scratch (sentence-transformers, ChromaDB, etc.) so it can take several minutes, on top of the setup step's own fetch/indexing time (see the timing table above); later builds reuse Docker's layer cache and are fast. `docker-compose.yml` bind-mounts `./data` into the container, so the dataset and ChromaDB index persist across restarts — the setup step above only needs to run once. Ollama (for `/chat`) isn't containerized here — it's expected to run on the host, or point `OLLAMA_HOST` in `.env` at wherever it's reachable.
 
 ## ✅ Testing
 
@@ -206,6 +220,10 @@ The same suite runs in CI on every push (`.github/workflows/tests.yml`) — rout
 ## 🔒 Security notes
 
 This is a portfolio/demo project. There are no user accounts, and the only state-changing endpoints (search, recommendations, Letterboxd import) are same-origin form/file submissions with no destructive cross-site action, so CSRF/CORS middleware was intentionally left out to keep the app simple. Treat it accordingly if you extend it toward a multi-user deployment.
+
+## 🎞️ TMDB compliance
+
+This product uses the TMDB API but is not endorsed or certified by TMDB (notice also shown in the app's footer, as required by [TMDB's attribution terms](https://www.themoviedb.org/about/logos-attribution)). No TMDB data is bundled with or redistributed by this repository — `scripts/build_dataset.py` fetches a bounded subset locally with your own API key, and `data/.fetch_meta.json` tracks when it was fetched so the app can warn you before you hit TMDB's 6-month cache limit.
 
 ## 🧾 Notebooks
 

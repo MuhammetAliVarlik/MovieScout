@@ -8,10 +8,12 @@
 ├── LICENSE            <- Open-source license (MIT)
 ├── Makefile           <- Convenience commands (make requirements/lint/format/test)
 ├── README.md          <- Project description, setup instructions, and usage
-├── data               <- Directory for handling all data files
-│   ├── external       <- Data from third party sources (e.g., raw datasets, APIs) — gitignored, empty
-│   ├── interim        <- Intermediate data that has been processed or transformed but is not final yet — gitignored, empty
-│   └── processed      <- The final, canonical dataset (TMDB.csv, ships with the repo)
+├── data               <- Gitignored (bar a .gitkeep) — nothing TMDB-derived is shipped
+│   ├── external       <- empty
+│   ├── interim        <- empty
+│   ├── processed      <- TMDB.csv lands here after scripts/build_dataset.py
+│   ├── chroma         <- ChromaDB index, built by scripts/build_index.py
+│   └── .fetch_meta.json <- fetch timestamp, written by scripts/build_dataset.py
 │
 ├── docs               <- Screenshots/media used by README
 │
@@ -22,12 +24,18 @@
 ├── requirements.txt   <- Runtime pip dependencies
 ├── requirements-dev.txt <- Dev-only tools (pytest, ruff) — not installed in the Docker image
 │
+├── scripts
+│   ├── build_dataset.py <- Fetches a bounded, popularity-ranked subset from the TMDB API
+│   ├── build_index.py   <- Embeds data/processed/TMDB.csv into ChromaDB, with progress output
+│   └── setup.py          <- Runs both of the above in sequence
+│
 ├── setup.cfg          <- flake8 configuration
 │
 ├── run.py             <- Entry point: builds the app via app.create_app() and runs it
 │
 ├── tests              <- Pytest suite
 │   ├── conftest.py
+│   ├── fixtures/TMDB.csv <- Tiny hand-authored dataset used only by tests, never real TMDB data
 │   ├── test_letterboxd.py
 │   ├── test_models.py
 │   └── test_routes.py
