@@ -24,6 +24,12 @@
 <a target="_blank" href="https://ollama.com">
     <img src="https://img.shields.io/badge/Ollama-000000?logo=ollama&logoColor=white" />
 </a>
+<a target="_blank" href="https://github.com/MuhammetAliVarlik/MovieScout/actions/workflows/tests.yml">
+    <img src="https://github.com/MuhammetAliVarlik/MovieScout/actions/workflows/tests.yml/badge.svg" />
+</a>
+<a target="_blank" href="LICENSE">
+    <img src="https://img.shields.io/badge/License-MIT-yellow.svg" />
+</a>
 
 --
 A web application that helps you find and explore movies based on your interests. By leveraging the TMDB dataset and semantic search, MovieScout lets you search for films, swipe through recommendations, import your Letterboxd ratings history, and chat with a local LLM for personalized suggestions.
@@ -54,6 +60,76 @@ Flask, ChromaDB (semantic search), Sentence-Transformers (embeddings), Ollama (l
 
 ---
 
+## 🏗️ Architecture
+
+```mermaid
+flowchart TB
+    Browser["Browser"]
+
+    subgraph Flask["Flask app (blueprints)"]
+        Home["home\n/, /search_movies, /find_similar_movies"]
+        Discover["discover\n/discover"]
+        Chat["chat\n/chat, /chat/stream, /chat/search"]
+        Api["api\n/api/import, /api/profile, /api/watchlist/export"]
+    end
+
+    subgraph Services["app/services"]
+        RecEngine["MovieRecommendationEngine"]
+        RAG["FilmRAG"]
+        Importer["LetterboxdImporter"]
+    end
+
+    Chroma[("ChromaDB\nvector store")]
+    ST["Sentence-Transformers\nembeddings"]
+    Ollama["Ollama\n(local LLM)"]
+    CSV[("data/processed/TMDB.csv")]
+    TMDBAPI["Live TMDB API\n(optional fallback)"]
+
+    Browser --> Home & Discover & Chat & Api
+
+    Home --> RecEngine
+    Discover --> RecEngine
+    RecEngine --> Chroma
+    RecEngine --> ST
+    RecEngine --> CSV
+
+    Chat --> RAG
+    RAG --> Ollama
+    RAG --> RecEngine
+
+    Api --> Importer
+    Importer --> CSV
+    Importer -.-> TMDBAPI
+```
+
+The recommendation engine (semantic search over `data/processed/TMDB.csv` via ChromaDB + Sentence-Transformers) is instantiated once at startup and shared across blueprints. Chat's `FilmRAG` reuses the same engine for context, then calls a local Ollama model for the actual response — no data leaves your machine. See [`STRUCTURE.md`](STRUCTURE.md) for the full file layout.
+
+**The "wizard" flow** — telling MovieScout what you like, either by searching or importing Letterboxd, both feed the same recommendation path:
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant W as Home wizard
+    participant I as /api/import
+    participant R as /find_similar_movies
+    participant D as Discover
+
+    alt Import Letterboxd ratings
+        U->>W: Upload export (.zip/.csv)
+        W->>I: POST file
+        I->>I: Parse + enrich taste profile
+        I-->>W: Top genres / top-rated films
+        W->>R: Auto-seed with top-rated titles
+    else Search manually
+        U->>W: Pick a few films
+        W->>R: POST movies[]
+    end
+    R->>D: Redirect with recommendations
+    D-->>U: Swipe to like / pass
+```
+
+---
+
 ## 📸 Media
 
 ### Homepage:
@@ -71,6 +147,8 @@ Flask, ChromaDB (semantic search), Sentence-Transformers (embeddings), Ollama (l
 ### Movies Chat:
 
 ![Alt text](docs/demo/movies_chat.png?raw=true "Movies Chat")
+
+![Movie chat in action](docs/demo/movie_chat.gif?raw=true "Movie chat demo")
 
 ## 📦 Installation
 
@@ -107,9 +185,31 @@ ollama pull llama3.2:3b
 
 Ollama typically starts its server automatically; if not, run `ollama serve`. Without it, `/chat` still loads and shows a clear inline message explaining what to do instead of failing.
 
+### 🐳 Run with Docker
+
+```bash
+cp .env.example .env   # skip if you already created one above
+docker compose up --build
+```
+
+Visit `http://localhost:5000`. The first build installs everything from scratch (sentence-transformers, ChromaDB, etc.) so it can take several minutes; later builds reuse Docker's layer cache and are fast. `docker-compose.yml` bind-mounts `./data` into the container, so the dataset and ChromaDB index persist across restarts. Ollama (for `/chat`) isn't containerized here — it's expected to run on the host, or point `OLLAMA_HOST` in `.env` at wherever it's reachable.
+
+## ✅ Testing
+
+```bash
+pip install -r requirements.txt -r requirements-dev.txt
+pytest
+```
+
+The same suite runs in CI on every push (`.github/workflows/tests.yml`) — route-level tests for home/search/discover/import/export, plus model and Letterboxd-import unit tests.
+
 ## 🔒 Security notes
 
 This is a portfolio/demo project. There are no user accounts, and the only state-changing endpoints (search, recommendations, Letterboxd import) are same-origin form/file submissions with no destructive cross-site action, so CSRF/CORS middleware was intentionally left out to keep the app simple. Treat it accordingly if you extend it toward a multi-user deployment.
+
+## 🧾 Notebooks
+
+`notebooks/` holds the original data-exploration and prototyping work (preprocessing the raw Kaggle dataset, early semantic-search and LLM-search experiments) that predates the Flask app — kept for history, not required to run the app itself.
 
 ## 🤝 Contributing
 

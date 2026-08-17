@@ -1,28 +1,26 @@
 ## Project Organization
 
 ```
+├── Dockerfile          <- CPU-only image; pip install + `python run.py`
+├── docker-compose.yml  <- Single `web` service, binds ./data for persistence
+├── .dockerignore       <- Keeps build context small (excludes .git, data/, etc.)
+│
 ├── LICENSE            <- Open-source license (MIT)
 ├── Makefile           <- Convenience commands (make requirements/lint/format/test)
 ├── README.md          <- Project description, setup instructions, and usage
 ├── data               <- Directory for handling all data files
-│   ├── external       <- Data from third party sources (e.g., raw datasets, APIs)
-│   ├── interim        <- Intermediate data that has been processed or transformed but is not final yet
-│   ├── processed      <- The final, canonical dataset (TMDB.csv, ships with the repo)
-│   └── raw            <- The original, immutable data dump (gitignored — large Kaggle files)
+│   ├── external       <- Data from third party sources (e.g., raw datasets, APIs) — gitignored, empty
+│   ├── interim        <- Intermediate data that has been processed or transformed but is not final yet — gitignored, empty
+│   └── processed      <- The final, canonical dataset (TMDB.csv, ships with the repo)
 │
 ├── docs               <- Screenshots/media used by README
 │
-├── models             <- Gitignored; unused now that chat runs on Ollama instead of a local GGUF file
-│
 ├── notebooks          <- Jupyter notebooks used during initial data exploration/preprocessing
 │
-├── pyproject.toml     <- Project metadata + tool config (black, ruff/isort, pytest)
+├── pyproject.toml     <- Project metadata + tool config (ruff, pytest)
 │
-├── references         <- Data dictionaries, manuals, and other explanatory materials
-│
-├── reports            <- Generated reports/figures from analysis
-│
-├── requirements.txt   <- Pip dependencies (single canonical install path)
+├── requirements.txt   <- Runtime pip dependencies
+├── requirements-dev.txt <- Dev-only tools (pytest, ruff) — not installed in the Docker image
 │
 ├── setup.cfg          <- flake8 configuration
 │
@@ -31,7 +29,8 @@
 ├── tests              <- Pytest suite
 │   ├── conftest.py
 │   ├── test_letterboxd.py
-│   └── test_models.py
+│   ├── test_models.py
+│   └── test_routes.py
 │
 └── app                <- Flask application package
     │
