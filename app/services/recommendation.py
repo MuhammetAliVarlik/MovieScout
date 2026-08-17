@@ -103,6 +103,8 @@ class MovieRecommendationEngine:
         movie_titles: list[str],
         exclude_titles: set[str] | None = None,
         limit: int = 20,
+        genre: str | None = None,
+        min_rating: float | None = None,
     ) -> list[Movie]:
         assert self.df is not None
         if not movie_titles:
@@ -126,10 +128,12 @@ class MovieRecommendationEngine:
             t.lower() for t in movie_titles
         }
 
-        # Query more than needed so we can filter after
+        # Query more than needed so we can filter after — genre/rating filters
+        # can eliminate a lot of candidates, so pull a wider pool when active.
+        pool_multiplier = 10 if (genre or min_rating) else 3
         results = self.collection.query(
             query_texts=[query_text],
-            n_results=min(limit * 3, self.collection.count()),
+            n_results=min(limit * pool_multiplier, self.collection.count()),
         )
 
         returned_ids = results["ids"][0]
@@ -142,6 +146,10 @@ class MovieRecommendationEngine:
                 continue
             title = str(r.get("title", ""))
             if title.lower() in excluded or title.lower() in seen:
+                continue
+            if genre and genre.lower() not in str(r.get("genres", "")).lower():
+                continue
+            if min_rating and float(r.get("vote_average", 0) or 0) < min_rating:
                 continue
             seen.add(title.lower())
 

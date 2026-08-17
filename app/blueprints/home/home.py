@@ -13,7 +13,14 @@ def _get_engine() -> MovieRecommendationEngine:
 
 @home_bp.route("/")
 def home():
-    return render_template("index.html")
+    engine = _get_engine()
+    genres = sorted({
+        g.strip()
+        for cell in engine.df["genres"].dropna()
+        for g in str(cell).split(",")
+        if g.strip()
+    })
+    return render_template("index.html", genres=genres)
 
 
 @home_bp.route("/search_movies", methods=["POST"])
@@ -42,7 +49,13 @@ def find_similar_movies():
     if profile_data:
         exclude = {f["title"].lower() for f in profile_data.get("films", []) if f.get("title")}
 
-    recommendations = engine.get_recommendations(movie_list, exclude_titles=exclude, limit=limit)
+    genre = request.form.get("genre", "").strip() or None
+    min_rating_raw = request.form.get("min_rating", "").strip()
+    min_rating = float(min_rating_raw) if min_rating_raw else None
+
+    recommendations = engine.get_recommendations(
+        movie_list, exclude_titles=exclude, limit=limit, genre=genre, min_rating=min_rating
+    )
     session["recommendations"] = [r.model_dump() for r in recommendations]
     session["total_similar_movies"] = len(recommendations)
     return jsonify({"status": "success", "total": len(recommendations)})
