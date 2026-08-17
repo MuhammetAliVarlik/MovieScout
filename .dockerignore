@@ -1,0 +1,25 @@
+.git
+.gitignore
+
+# data/ is bind-mounted at runtime via docker-compose.yml (./data:/app/data),
+# so nothing here needs to be baked into the image.
+data/
+
+# Leftover from the earlier llama-cpp-python setup; chat now uses Ollama.
+models/
+
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+.venv/
+venv/
+env/
+
+.env
+.env.example
+
+README.md
+projectPlan.md
