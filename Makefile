@@ -14,7 +14,7 @@ PYTHON_INTERPRETER = python
 ## Install Python Dependencies
 .PHONY: requirements
 requirements:
-	pip install -r requirements.txt
+	pip install -r requirements.txt -r requirements-dev.txt
 
 
 
@@ -25,17 +25,15 @@ clean:
 	find . -type f -name "*.py[co]" -delete
 	find . -type d -name "__pycache__" -delete
 
-## Lint using flake8 and black (use `make format` to do formatting)
+## Lint using ruff (use `make format` to do formatting)
 .PHONY: lint
 lint:
-	flake8 app tests
-	isort --check --diff --profile black app tests
-	black --check --config pyproject.toml app tests
+	ruff check app tests
 
-## Format source code with black
+## Format source code with ruff
 .PHONY: format
 format:
-	black --config pyproject.toml app tests
+	ruff format app tests
 
 ## Run the test suite
 .PHONY: test
