@@ -218,16 +218,7 @@ document.addEventListener("submit", async function (e) {
             resultEl.innerHTML = `<div class="text-danger">${data.error || "Import failed."}</div>`;
             return;
         }
-        const genres = (data.top_genres || []).join(", ") || "—";
-        const films = (data.top_films || []).map(f => `${f.title} (${f.rating}★)`).join(", ") || "—";
-        resultEl.innerHTML = `
-            <div class="text-success mb-2">Imported ${data.total_films} film(s).</div>
-            <div class="small text-muted">Top genres: ${genres}</div>
-            <div class="small text-muted">Top rated: ${films}</div>
-            <div class="small text-white mt-2">Building your recommendations…</div>
-        `;
-        refreshTasteProfilePill();
-        await seedRecommendationsFromProfile(data.top_films || [], resultEl);
+        await renderImportSuccess(data, resultEl);
     } catch (err) {
         console.error("Letterboxd import failed:", err);
         resultEl.innerHTML = `<div class="text-danger">Something went wrong. Please try again.</div>`;
@@ -235,6 +226,58 @@ document.addEventListener("submit", async function (e) {
         submitBtn.disabled = false;
     }
 });
+
+// ─── Letterboxd import via username (RSS) ──────────────────────────────────────
+
+document.addEventListener("submit", async function (e) {
+    const form = e.target.closest("#importLetterboxdRssForm");
+    if (!form) return;
+    e.preventDefault();
+
+    const usernameInput = document.getElementById("letterboxdUsername");
+    const resultEl = document.getElementById("importResult");
+    const submitBtn = form.querySelector("button[type=submit]");
+
+    const username = usernameInput.value.trim();
+    if (!username) {
+        resultEl.innerHTML = `<div class="text-danger">Enter a Letterboxd username first.</div>`;
+        return;
+    }
+
+    const body = new FormData();
+    body.append("username", username);
+
+    submitBtn.disabled = true;
+    resultEl.innerHTML = `<div class="text-muted">Fetching your recent diary from Letterboxd…</div>`;
+
+    try {
+        const res = await fetch("/api/import/rss", { method: "POST", body });
+        const data = await res.json();
+        if (!res.ok) {
+            resultEl.innerHTML = `<div class="text-danger">${data.error || "Couldn't fetch that profile."}</div>`;
+            return;
+        }
+        await renderImportSuccess(data, resultEl);
+    } catch (err) {
+        console.error("Letterboxd RSS import failed:", err);
+        resultEl.innerHTML = `<div class="text-danger">Something went wrong. Please try again.</div>`;
+    } finally {
+        submitBtn.disabled = false;
+    }
+});
+
+async function renderImportSuccess(data, resultEl) {
+    const genres = (data.top_genres || []).join(", ") || "—";
+    const films = (data.top_films || []).map(f => `${f.title} (${f.rating}★)`).join(", ") || "—";
+    resultEl.innerHTML = `
+        <div class="text-success mb-2">Imported ${data.total_films} film(s).</div>
+        <div class="small text-muted">Top genres: ${genres}</div>
+        <div class="small text-muted">Top rated: ${films}</div>
+        <div class="small text-white mt-2">Building your recommendations…</div>
+    `;
+    refreshTasteProfilePill();
+    await seedRecommendationsFromProfile(data.top_films || [], resultEl);
+}
 
 async function seedRecommendationsFromProfile(topFilms, resultEl) {
     const titles = topFilms.map(f => f.title).filter(Boolean);

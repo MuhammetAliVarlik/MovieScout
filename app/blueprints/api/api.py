@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, jsonify, request, session
 
 from app.services import LetterboxdImporter
 
@@ -27,12 +27,44 @@ def import_letterboxd():
             profile = importer.from_csv_bytes(raw)
         else:
             return jsonify({"error": "Upload a .zip or .csv file"}), 400
-    except Exception as exc:
+    except ValueError as exc:
+        # Our own code raises ValueError with clean, user-facing messages
+        # ("ratings.csv not found in the uploaded ZIP.", etc) — safe to show.
         return jsonify({"error": str(exc)}), 422
+    except Exception:  # noqa: BLE001 — anything else is unexpected (a corrupt
+        # file, a parser edge case); don't leak its raw message to the client.
+        return jsonify({"error": "Couldn't parse that file — is it a real Letterboxd export?"}), 422
 
     # Persist the profile in the session for use by other blueprints
     session["taste_profile"] = profile.model_dump(mode="json")
 
+    return jsonify(LetterboxdImporter.summarise(profile))
+
+
+@api_bp.route("/import/rss", methods=["POST"])
+def import_letterboxd_rss():
+    """
+    Fetch a Letterboxd user's public diary RSS feed (a lighter-weight
+    alternative to uploading a ratings.csv export) and build/store a
+    TasteProfile from it, same as /import.
+    """
+    username = request.form.get("username", "").strip()
+    if not username:
+        return jsonify({"error": "Enter a Letterboxd username"}), 400
+
+    importer = LetterboxdImporter()
+    try:
+        profile = importer.from_rss_username(username)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 422
+
+    if not profile.films:
+        return jsonify({
+            "error": "No rated films found in that profile's recent diary "
+                     "(private profile, or nothing rated recently)."
+        }), 422
+
+    session["taste_profile"] = profile.model_dump(mode="json")
     return jsonify(LetterboxdImporter.summarise(profile))
 
 
@@ -46,7 +78,7 @@ def get_profile():
     from app.models import TasteProfile
     try:
         profile = TasteProfile.model_validate(profile_data)
-    except Exception:
+    except Exception:  # noqa: BLE001 — any validation failure means the same thing here
         return jsonify({"error": "Stored profile is corrupt"}), 500
 
     return jsonify(LetterboxdImporter.summarise(profile))

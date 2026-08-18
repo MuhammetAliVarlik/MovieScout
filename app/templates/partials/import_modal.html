@@ -14,6 +14,19 @@
                     <input type="file" class="form-input-file" id="letterboxdFile" accept=".zip,.csv" required>
                     <button type="submit" class="btn btn-cinema mt-3">Import</button>
                 </form>
+
+                <hr class="border-secondary my-3">
+
+                <p class="small text-muted mb-2">
+                    Or, if your profile is public, just enter your username — pulls recently watched,
+                    rated films straight from your Letterboxd diary. Lighter than the full export, but
+                    only covers recent activity (not your whole history).
+                </p>
+                <form id="importLetterboxdRssForm" class="d-flex gap-2">
+                    <input type="text" class="form-input" id="letterboxdUsername" placeholder="letterboxd username" autocomplete="off">
+                    <button type="submit" class="btn btn-cinema">Fetch</button>
+                </form>
+
                 <div id="importResult" class="mt-3"></div>
             </div>
         </div>
