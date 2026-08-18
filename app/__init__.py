@@ -3,6 +3,7 @@ from pathlib import Path
 from cachelib.file import FileSystemCache
 from flask import Flask
 from flask_session import Session
+
 from .config import Config
 from .extensions import cache
 
@@ -24,6 +25,26 @@ def create_app(config: Config | None = None) -> Flask:
     app.config["RAG_CONTEXT_FILMS"] = cfg.RAG_CONTEXT_FILMS
     app.config["CACHE_TYPE"] = "SimpleCache"
     app.config["CACHE_DEFAULT_TIMEOUT"] = 600
+
+    # Caps the size of any request body Flask will read at all — without this,
+    # /api/import (file upload) or /find_similar_movies would read an
+    # arbitrarily large body fully into memory before any of our own code
+    # gets a chance to reject it. 25MB is generous for a Letterboxd export
+    # (even a multi-thousand-film ratings.csv is a few MB) with headroom.
+    app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024
+
+    if cfg.SECRET_KEY == Config.model_fields["SECRET_KEY"].default:
+        print(
+            "[WARNING] SECRET_KEY is left at its default value — sessions can "
+            "be forged by anyone. Set a random SECRET_KEY in .env before this "
+            "app is reachable by anyone but you."
+        )
+    if cfg.FLASK_ENV == "development":
+        print(
+            "[WARNING] FLASK_ENV=development enables Werkzeug's debugger "
+            "(arbitrary code execution from the browser). Fine on localhost; "
+            "set FLASK_ENV=production before this is reachable over a network."
+        )
 
     # Recommendations/taste-profile payloads are too large for a client-side
     # cookie session (real browsers cap cookies at ~4KB; Flask's default
@@ -47,10 +68,10 @@ def create_app(config: Config | None = None) -> Flask:
         )
         app.extensions["recommendation_engine"] = engine
 
-    from .blueprints.home.home import home_bp
-    from .blueprints.discover.discover import discover_bp
-    from .blueprints.chat.chat import chat_bp
     from .blueprints.api.api import api_bp
+    from .blueprints.chat.chat import chat_bp
+    from .blueprints.discover.discover import discover_bp
+    from .blueprints.home.home import home_bp
 
     app.register_blueprint(home_bp)
     app.register_blueprint(discover_bp)

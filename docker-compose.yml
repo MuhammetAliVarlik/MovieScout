@@ -4,5 +4,14 @@ services:
     ports:
       - "5000:5000"
     env_file: .env
+    environment:
+      # Inside the container "localhost" is the container itself, not your
+      # machine — Ollama running on the host needs to be reached via Docker's
+      # special hostname instead. Overrides whatever OLLAMA_HOST is in .env.
+      - OLLAMA_HOST=http://host.docker.internal:11434
+    extra_hosts:
+      # host.docker.internal is automatic on Docker Desktop (Mac/Windows);
+      # this makes it resolve on native Linux Docker too.
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./data:/app/data # dataset + persisted ChromaDB index
