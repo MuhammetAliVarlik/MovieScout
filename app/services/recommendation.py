@@ -1,16 +1,22 @@
+from datetime import datetime, timedelta, timezone
+import hashlib
 import json
 import os
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-import pandas as pd
 import chromadb
 from chromadb.utils import embedding_functions
+import numpy as np
+import pandas as pd
+
+from app.extensions import cache
 from app.models import Movie
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 STALE_AFTER = timedelta(days=int(5.5 * 30))  # ~5.5 months, safely under TMDB's 6-month cache limit
+
+RECOMMENDATION_CACHE_TTL = 600  # 10 min — same movie picks re-requested don't redo embedding + ANN search
 
 
 class MovieRecommendationEngine:
@@ -51,6 +57,10 @@ class MovieRecommendationEngine:
             )
         self.df = pd.read_csv(self.csv_file_path)
         self.df["genres"] = self.df["genres"].fillna("")
+        # Some movies (usually obscure/upcoming ones) have no TMDB overview —
+        # left as NaN, str(nan) renders as the literal text "nan" everywhere
+        # it's shown, so blank it out here instead of at every call site.
+        self.df["overview"] = self.df["overview"].fillna("")
         print("CSV loaded.")
 
     def _check_freshness(self) -> None:
@@ -155,6 +165,14 @@ class MovieRecommendationEngine:
         if not movie_titles:
             return []
 
+        exclude_titles = exclude_titles or set()
+        cache_key = self._recommendations_cache_key(
+            movie_titles, exclude_titles, limit, genre, min_rating
+        )
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return cached
+
         # Build query text from the selected movies' overviews + genres
         query_parts = []
         for title in movie_titles:
@@ -168,8 +186,15 @@ class MovieRecommendationEngine:
         if not query_parts:
             return []
 
-        query_text = " ".join(query_parts)
-        excluded = {t.lower() for t in (exclude_titles or set())} | {
+        # Embed each selected movie separately and average the vectors, rather
+        # than concatenating all their text into one string and embedding that.
+        # all-MiniLM-L6-v2 has a 256-token limit — concatenating title+overview
+        # +genres for more than ~2 movies silently exceeds it, truncating the
+        # input so later picks never actually influenced the query at all.
+        embeddings = self._ef(query_parts)
+        query_embedding = np.mean(np.asarray(embeddings), axis=0).tolist()
+
+        excluded = {t.lower() for t in exclude_titles} | {
             t.lower() for t in movie_titles
         }
 
@@ -177,7 +202,7 @@ class MovieRecommendationEngine:
         # can eliminate a lot of candidates, so pull a wider pool when active.
         pool_multiplier = 10 if (genre or min_rating) else 3
         results = self.collection.query(
-            query_texts=[query_text],
+            query_embeddings=[query_embedding],
             n_results=min(limit * pool_multiplier, self.collection.count()),
         )
 
@@ -207,18 +232,39 @@ class MovieRecommendationEngine:
                     tmdb_id=int(r["id"]) if pd.notna(r.get("id")) else None,
                     title=title,
                     overview=str(r.get("overview", "")),
-                    poster_path=r.get("poster_path") or None,
-                    backdrop_path=r.get("backdrop_path") or None,
-                    release_date=str(r.get("release_date", "")) or None,
+                    poster_path=r.get("poster_path") if pd.notna(r.get("poster_path")) else None,
+                    backdrop_path=r.get("backdrop_path") if pd.notna(r.get("backdrop_path")) else None,
+                    release_date=str(r.get("release_date")) if pd.notna(r.get("release_date")) else None,
                     runtime=int(r["runtime"]) if pd.notna(r.get("runtime")) else None,
                     genres=str(r.get("genres", "")),
                     vote_average=float(r.get("vote_average", 0)),
                     vote_count=int(r.get("vote_count", 0)),
-                    status=r.get("status") or None,
+                    status=r.get("status") if pd.notna(r.get("status")) else None,
                     similarity_score=score,
                 )
             )
             if len(movies) >= limit:
                 break
 
+        cache.set(cache_key, movies, timeout=RECOMMENDATION_CACHE_TTL)
         return movies
+
+    @staticmethod
+    def _recommendations_cache_key(
+        movie_titles: list[str],
+        exclude_titles: set[str],
+        limit: int,
+        genre: str | None,
+        min_rating: float | None,
+    ) -> str:
+        raw = json.dumps(
+            {
+                "titles": sorted(movie_titles),
+                "exclude": sorted(exclude_titles),
+                "limit": limit,
+                "genre": genre,
+                "min_rating": min_rating,
+            },
+            sort_keys=True,
+        )
+        return "rec:" + hashlib.sha256(raw.encode()).hexdigest()
