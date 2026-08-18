@@ -26,3 +26,8 @@ force-sort-within-sections = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Without this, only `python -m pytest` (which adds cwd to sys.path itself)
+# can import `app` — the bare `pytest` CI actually runs can't, since pytest's
+# own import-path insertion only reaches tests/ (no tests/__init__.py), not
+# its parent where app/ lives.
+pythonpath = ["."]
