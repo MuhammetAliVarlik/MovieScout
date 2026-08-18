@@ -1,7 +1,7 @@
 ## Project Organization
 
 ```
-├── Dockerfile          <- CPU-only image; pip install + `python run.py`
+├── Dockerfile          <- CPU-only image; pip install + `python run.py`, runs as non-root
 ├── docker-compose.yml  <- Single `web` service, binds ./data for persistence
 ├── .dockerignore       <- Keeps build context small (excludes .git, data/, etc.)
 │
@@ -17,7 +17,8 @@
 │
 ├── docs               <- Screenshots/media used by README
 │
-├── notebooks          <- Jupyter notebooks used during initial data exploration/preprocessing
+├── notebooks          <- Historical exploration/prototyping notebooks (predate scripts/build_dataset.py;
+│                         preprocess.ipynb has an in-notebook note explaining it's superseded), outputs cleared
 │
 ├── pyproject.toml     <- Project metadata + tool config (ruff, pytest)
 │

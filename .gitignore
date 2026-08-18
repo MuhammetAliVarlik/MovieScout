@@ -95,6 +95,9 @@ instance/
 # MkDocs documentation
 docs/site/
 
+# Superseded screenshots, kept locally for reference — not shipped
+docs/demo/old_version/
+
 # PyBuilder
 .pybuilder/
 target/
