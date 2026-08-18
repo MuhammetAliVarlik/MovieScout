@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template, request, jsonify, session, current_app
+from flask import Blueprint, current_app, jsonify, render_template, request, session
+
 from app.services import MovieRecommendationEngine, MovieSearchService
 
 home_bp = Blueprint(

@@ -28,12 +28,12 @@ clean:
 ## Lint using ruff (use `make format` to do formatting)
 .PHONY: lint
 lint:
-	ruff check app tests
+	ruff check app tests scripts
 
 ## Format source code with ruff
 .PHONY: format
 format:
-	ruff format app tests
+	ruff format app tests scripts
 
 ## Run the test suite
 .PHONY: test

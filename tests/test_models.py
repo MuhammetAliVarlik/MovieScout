@@ -1,5 +1,6 @@
-from app.models import Movie, RatedMovie, TasteProfile
 from datetime import date
+
+from app.models import Movie, RatedMovie, TasteProfile
 
 
 def test_movie_defaults():

@@ -6,12 +6,14 @@ Usage:
     python scripts/setup.py
 """
 
-import sys
 from pathlib import Path
+import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-import scripts.build_dataset as build_dataset  # noqa: E402
-import scripts.build_index as build_index  # noqa: E402
+from scripts import (
+    build_dataset,
+    build_index,
+)
 
 
 def main() -> None:

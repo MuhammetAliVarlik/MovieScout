@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+
 from app import create_app
 from app.config import Config
 from app.services.recommendation import MovieRecommendationEngine
@@ -32,6 +33,11 @@ def app(_populated_chroma_dir):
         SECRET_KEY="test-secret",
         TMDB_DATASET_PATH=FIXTURE_CSV,
         CHROMA_PERSIST_PATH=_populated_chroma_dir,
+        # Pin this explicitly rather than leaving it to whatever's in the
+        # developer's real .env — Config auto-loads unset fields from .env,
+        # so a real TMDB_API_KEY there would make tests silently start
+        # making live network calls (Letterboxd import's TMDB fallback).
+        TMDB_API_KEY="",
     )
     application = create_app(cfg)
     application.config["TESTING"] = True

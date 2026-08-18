@@ -10,13 +10,13 @@ Usage:
     python scripts/build_index.py
 """
 
+from pathlib import Path
 import sys
 import time
-from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from app.config import Config  # noqa: E402
-from app.services.recommendation import MovieRecommendationEngine  # noqa: E402
+from app.config import Config
+from app.services.recommendation import MovieRecommendationEngine
 
 
 def main() -> None:

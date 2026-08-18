@@ -1,9 +1,11 @@
 from __future__ import annotations
-import json
-from typing import Generator
 
-import requests
+from collections.abc import Generator
+import json
+from typing import ClassVar
+
 from flask import current_app
+import requests
 
 from app.models import Movie, TasteProfile
 
@@ -27,7 +29,7 @@ class FilmRAG:
       be reached or the model isn't pulled.
     """
 
-    _STOP_TOKENS = ["[INST]", "</s>", "User:", "Human:"]
+    _STOP_TOKENS: ClassVar[list[str]] = ["[INST]", "</s>", "User:", "Human:"]
 
     def __init__(self, taste_profile: TasteProfile | None = None):
         self.taste_profile = taste_profile
@@ -58,10 +60,18 @@ class FilmRAG:
                     "options": {"num_predict": max_tokens, "stop": self._STOP_TOKENS},
                 },
                 stream=True,
-                timeout=60,
+                # (connect, read) — read is generous because Ollama can take
+                # 60-90s to load a multi-GB model into memory on its first
+                # request (or after its idle-unload timer), all before the
+                # first token streams back. Once warm, tokens arrive quickly.
+                timeout=(10, 300),
             )
         except requests.exceptions.ConnectionError:
             raise self._unavailable(f"couldn't connect to Ollama at {host}")
+        except requests.exceptions.Timeout:
+            raise self._unavailable(
+                f"{host} didn't respond in time (still loading the model into memory?)"
+            )
 
         if resp.status_code != 200:
             raise self._unavailable(
@@ -138,12 +148,12 @@ class FilmRAG:
                             tmdb_id=int(r["id"]) if pd.notna(r.get("id")) else None,
                             title=str(r.get("title", "")),
                             overview=str(r.get("overview", "")),
-                            release_date=str(r.get("release_date", "")) or None,
+                            release_date=str(r.get("release_date")) if pd.notna(r.get("release_date")) else None,
                         )
                     )
             return films
-        except Exception:
-            return []
+        except Exception:  # noqa: BLE001 — chat should degrade to "no context films"
+            return []  # rather than break the whole response over a retrieval hiccup
 
     # ── Public API ─────────────────────────────────────────────────────────────
 

@@ -1,7 +1,7 @@
+from datetime import date
 import re
 
 from pydantic import BaseModel, computed_field
-from datetime import date
 
 
 class Movie(BaseModel):

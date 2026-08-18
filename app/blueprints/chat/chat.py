@@ -1,9 +1,15 @@
 from flask import (
-    Blueprint, render_template, request,
-    Response, session, jsonify, current_app,
+    Blueprint,
+    Response,
+    current_app,
+    jsonify,
+    render_template,
+    request,
+    session,
 )
-from app.services import FilmRAG, MovieSearchService, LLMUnavailableError
+
 from app.models import TasteProfile
+from app.services import FilmRAG, LLMUnavailableError, MovieSearchService
 
 chat_bp = Blueprint(
     "chat_bp", __name__, template_folder="templates",
@@ -18,7 +24,7 @@ def _get_rag() -> FilmRAG:
     if profile_data:
         try:
             taste = TasteProfile.model_validate(profile_data)
-        except Exception:
+        except Exception:  # noqa: BLE001 — a corrupt/stale session value just means "no taste profile"
             taste = None
     return FilmRAG(taste_profile=taste)
 
