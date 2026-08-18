@@ -12,24 +12,31 @@ Usage:
     python scripts/build_dataset.py
 """
 
+from datetime import datetime, timezone
 import json
 import math
+from pathlib import Path
 import sys
 import time
-from datetime import datetime, timezone
-from pathlib import Path
 
 import pandas as pd
 import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from app.config import Config  # noqa: E402
+from app.config import Config
 
 TMDB_NOTE = "This product uses the TMDB API but is not endorsed or certified by TMDB."
 API_BASE = "https://api.themoviedb.org/3"
 PAGE_SIZE = 20
 MAX_REQUESTS_PER_SECOND = 30
 MAX_RETRIES = 5
+
+# TMDB's list endpoints (including /discover/movie) hard-cap pagination at
+# page 500 regardless of sort/filter — requesting page 501+ returns a 400,
+# not more results. That's a ceiling of 500*20 = 10,000 movies for any single
+# query, not something a bigger TMDB_BUILD_LIMIT can raise.
+TMDB_MAX_PAGE = 500
+TMDB_MAX_FETCHABLE = TMDB_MAX_PAGE * PAGE_SIZE
 
 
 class RateLimiter:
@@ -64,25 +71,33 @@ def fetch_genre_map(session: requests.Session, api_key: str, limiter: RateLimite
     return {g["id"]: g["name"] for g in data.get("genres", [])}
 
 
+class _PartialFetchError(Exception):
+    """Raised when a page fetch fails partway through — carries whatever was
+    already fetched (in .args[0]) so the caller can still write it out."""
+
+
 def fetch_movies(session: requests.Session, api_key: str, limit: int, limiter: RateLimiter) -> list[dict]:
     genre_map = fetch_genre_map(session, api_key, limiter)
-    total_pages = math.ceil(limit / PAGE_SIZE)
+    total_pages = min(math.ceil(limit / PAGE_SIZE), TMDB_MAX_PAGE)
     movies: list[dict] = []
     seen_ids: set[int] = set()
 
     for page in range(1, total_pages + 1):
-        data = _get(
-            session,
-            "/discover/movie",
-            {
-                "api_key": api_key,
-                "language": "en-US",
-                "sort_by": "popularity.desc",
-                "include_adult": "false",
-                "page": page,
-            },
-            limiter,
-        )
+        try:
+            data = _get(
+                session,
+                "/discover/movie",
+                {
+                    "api_key": api_key,
+                    "language": "en-US",
+                    "sort_by": "popularity.desc",
+                    "include_adult": "false",
+                    "page": page,
+                },
+                limiter,
+            )
+        except Exception as exc:
+            raise _PartialFetchError(movies) from exc
         results = data.get("results", [])
         if not results:
             break
@@ -129,11 +144,24 @@ def main() -> None:
         )
 
     limit = cfg.TMDB_BUILD_LIMIT
+    if limit > TMDB_MAX_FETCHABLE:
+        print(
+            f"[WARNING] TMDB_BUILD_LIMIT={limit}, but TMDB's /discover/movie "
+            f"pagination hard-caps at {TMDB_MAX_FETCHABLE} results (page 500) "
+            f"for any single sort order — fetching {TMDB_MAX_FETCHABLE} instead."
+        )
+        limit = TMDB_MAX_FETCHABLE
     print(f"Fetching the top {limit} popular movies from TMDB...")
 
     session = requests.Session()
     limiter = RateLimiter(MAX_REQUESTS_PER_SECOND)
-    movies = fetch_movies(session, cfg.TMDB_API_KEY, limit, limiter)
+    try:
+        movies = fetch_movies(session, cfg.TMDB_API_KEY, limit, limiter)
+    except Exception as exc:  # noqa: BLE001
+        # Don't let a late failure (a bad page, a network drop) throw away
+        # several minutes of already-fetched pages — write what we have.
+        print(f"\n[WARNING] Fetch stopped early ({exc!r}). Writing partial results so far.")
+        movies = exc.args[0] if isinstance(exc, _PartialFetchError) else []
 
     csv_path = Path(cfg.TMDB_DATASET_PATH)
     csv_path.parent.mkdir(parents=True, exist_ok=True)
